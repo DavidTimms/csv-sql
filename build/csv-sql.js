@@ -17,7 +17,7 @@ var _selectJs = require('./select.js');
 var _limitJs = require('./limit.js');
 
 var query = (0, _parserJs.parseQuery)(process.argv[2]);
-//console.log(query);
+//console.log(JSON.stringify(query, null, 4));
 
 var readStream = _fs2['default'].createReadStream(query.primaryTable);
 

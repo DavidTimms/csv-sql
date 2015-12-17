@@ -11,9 +11,9 @@ export function parseQuery(query) {
 function parseSubQuery(query) {
     const tokens = tokenize(query);
     return parser(tokens)
-        .bind('type', keyword('SELECT'))
+        .then(keyword('SELECT'))
         .bind('outputColumns', many(namedExpression, {separator: comma}))
-        .bind('from', keyword('FROM'))
+        .then(keyword('FROM'))
         .bind('primaryTable', tableName)
         .map(limitClause);
 }
@@ -32,6 +32,14 @@ function limitClause(context) {
     else return context;
 }
 
+function identifier([first, ...rest]) {
+    if (isType(first, 'word')) {
+        return parser(rest, first.string.toLowerCase());
+    }
+    throw SyntaxError(
+        `Expected an identifier, found "${first.string || '(end of input)'}"`);
+}
+
 function keyword(word) {
     return tokens => {
         const first = tokens[0];
@@ -47,12 +55,27 @@ function isKeyword(word, token) {
     return token && token.type === 'keyword' && token.string === word;
 }
 
-function expression([first, ...rest]) {
-    if (first && first.type === 'word') {
+function atom([first, ...rest]) {
+    if (isType(first, 'word') && isType(rest[0], 'parOpen')) {
+        return parser(rest.slice(1), {type: 'call', functionName: first.string.toUpperCase()})
+            .bind('arguments', many(expression, {separator: comma, min: 0}))
+            .then(parClose)
+            .mapNode(node => {
+                const argsString = node.arguments.map(arg => arg.string).join(', ');
+                node.string = `${node.functionName}(${argsString})`;
+                return node;
+            });
+    }
+    else if (isType(first, 'word', 'number', 'string')) {
         return parser(rest, first);
     }
-    else throw SyntaxError(
+    throw SyntaxError(
         `Expected an expression, found "${first.string || '(end of input)'}"`);
+}
+
+function expression(tokens) {
+    const {rest, node: left} = atom(tokens);
+    return parser(rest, left);
 }
 
 function expressionToName(exp) {
@@ -63,33 +86,39 @@ function namedExpression(tokens) {
     const {node: exp, rest} = expression(tokens);
 
     const node = {
+        type: 'namedExpression',
         expression: exp,
         name: expressionToName(exp),
     };
 
     if (isKeyword('AS', rest[0])) {
-        if (rest[1] && rest[1].type === 'word') {
-            node.name = rest[1].string;
-            return parser(rest.slice(2), node);
-        }
+        return parser(rest.slice(1), node).bind('name', identifier);
     }
-    else return parser(tokens.slice(1), node);
+    else return parser(rest, node);
 }
 
-function tableName(tokens) {
-    const first = tokens[0];
-    if (first && first.type === 'string') {
-        return parser(tokens.slice(1), first.value);
+function tableName([first, ...rest]) {
+    if (isType(first, 'string')) {
+        return parser(rest, first.value);
     }
-    else throw SyntaxError(`Expected a table name, found "${first.string || '(end of input)'}"`);
+    throw SyntaxError(
+        `Expected a table name, found "${first.string || '(end of input)'}"`);
 }
 
-function comma(tokens) {
-    const first = tokens[0];
-    if (first && first.type === 'comma') {
-        return parser(tokens.slice(1), ',');
+function comma([first, ...rest]) {
+    if (isType(first, 'comma')) {
+        return parser(rest, ',');
     }
-    else throw SyntaxError(`Expected a comma, found "${first.string || '(end of input)'}"`);
+    throw SyntaxError(
+        `Expected a comma, found "${first.string || '(end of input)'}"`);
+}
+
+function parClose([first, ...rest]) {
+    if (isType(first, 'parClose')) {
+        return parser(rest, ')');
+    }
+    throw SyntaxError(
+        `Expected a closing parenthesis, found "${first.string || '(end of input)'}"`);
 }
 
 function many(parseFunc, {separator}={}) {
@@ -114,6 +143,10 @@ function many(parseFunc, {separator}={}) {
         }
         return parser(rest, parts);
     };
+}
+
+function isType(node, ...types) {
+    return node && types.some(type => node.type === type);
 }
 
 var tokenTypes = {
@@ -162,18 +195,22 @@ function tokenize(query) {
     });
 }
 
+function printRest(parser) {
+    console.log(parser.rest.map(token => ({[token.type]: token.string})));
+    return parser;
+}
+
 function parser(rest, node={}) {
     return {
         rest,
-        node: node,
+        node,
         bind(key, parseFunc) {
-            const child = parseFunc(this.rest);
-            const newNode = {};
-            for (let oldKey in this.node) {
-                newNode[oldKey] = this.node[oldKey];
-            }
-            newNode[key] = child.node;
-            return parser(child.rest, newNode);
+            const {rest, node} = parseFunc(this.rest);
+            return parser(rest, merge(this.node, {[key]: node}));
+        },
+        then(parseFunc) {
+            const {rest} = parseFunc(this.rest);
+            return parser(rest, this.node);
         },
         mapNode(func) {
             return parser(this.rest, func(this.node));

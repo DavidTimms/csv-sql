@@ -7,7 +7,7 @@ import {performSelect} from './select.js';
 import {performLimit} from './limit.js';
 
 const query = parseQuery(process.argv[2]);
-//console.log(query);
+//console.log(JSON.stringify(query, null, 4));
 
 const readStream = fs.createReadStream(query.primaryTable);
 

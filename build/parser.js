@@ -7,6 +7,8 @@ exports.parseQuery = parseQuery;
 
 function _toArray(arr) { return Array.isArray(arr) ? arr : Array.from(arr); }
 
+function _defineProperty(obj, key, value) { return Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); }
+
 function parseQuery(query) {
     var _parseSubQuery = parseSubQuery(query);
 
@@ -24,7 +26,7 @@ function parseQuery(query) {
 
 function parseSubQuery(query) {
     var tokens = tokenize(query);
-    return parser(tokens).bind('type', keyword('SELECT')).bind('outputColumns', many(namedExpression, { separator: comma })).bind('from', keyword('FROM')).bind('primaryTable', tableName).map(limitClause);
+    return parser(tokens).then(keyword('SELECT')).bind('outputColumns', many(namedExpression, { separator: comma })).then(keyword('FROM')).bind('primaryTable', tableName).map(limitClause);
 }
 
 function limitClause(context) {
@@ -46,6 +48,19 @@ function limitClause(context) {
     } else return context;
 }
 
+function identifier(_ref2) {
+    var _ref22 = _toArray(_ref2);
+
+    var first = _ref22[0];
+
+    var rest = _ref22.slice(1);
+
+    if (isType(first, 'word')) {
+        return parser(rest, first.string.toLowerCase());
+    }
+    throw SyntaxError('Expected an identifier, found "' + (first.string || '(end of input)') + '"');
+}
+
 function keyword(word) {
     return function (tokens) {
         var first = tokens[0];
@@ -59,16 +74,34 @@ function isKeyword(word, token) {
     return token && token.type === 'keyword' && token.string === word;
 }
 
-function expression(_ref) {
-    var _ref2 = _toArray(_ref);
+function atom(_ref3) {
+    var _ref32 = _toArray(_ref3);
 
-    var first = _ref2[0];
+    var first = _ref32[0];
 
-    var rest = _ref2.slice(1);
+    var rest = _ref32.slice(1);
 
-    if (first && first.type === 'word') {
+    if (isType(first, 'word') && isType(rest[0], 'parOpen')) {
+        return parser(rest.slice(1), { type: 'call', functionName: first.string.toUpperCase() }).bind('arguments', many(expression, { separator: comma, min: 0 })).then(parClose).mapNode(function (node) {
+            var argsString = node.arguments.map(function (arg) {
+                return arg.string;
+            }).join(', ');
+            node.string = '' + node.functionName + '(' + argsString + ')';
+            return node;
+        });
+    } else if (isType(first, 'word', 'number', 'string')) {
         return parser(rest, first);
-    } else throw SyntaxError('Expected an expression, found "' + (first.string || '(end of input)') + '"');
+    }
+    throw SyntaxError('Expected an expression, found "' + (first.string || '(end of input)') + '"');
+}
+
+function expression(tokens) {
+    var _atom = atom(tokens);
+
+    var rest = _atom.rest;
+    var left = _atom.node;
+
+    return parser(rest, left);
 }
 
 function expressionToName(exp) {
@@ -82,35 +115,58 @@ function namedExpression(tokens) {
     var rest = _expression.rest;
 
     var node = {
+        type: 'namedExpression',
         expression: exp,
         name: expressionToName(exp) };
 
     if (isKeyword('AS', rest[0])) {
-        if (rest[1] && rest[1].type === 'word') {
-            node.name = rest[1].string;
-            return parser(rest.slice(2), node);
-        }
-    } else return parser(tokens.slice(1), node);
+        return parser(rest.slice(1), node).bind('name', identifier);
+    } else return parser(rest, node);
 }
 
-function tableName(tokens) {
-    var first = tokens[0];
-    if (first && first.type === 'string') {
-        return parser(tokens.slice(1), first.value);
-    } else throw SyntaxError('Expected a table name, found "' + (first.string || '(end of input)') + '"');
+function tableName(_ref4) {
+    var _ref42 = _toArray(_ref4);
+
+    var first = _ref42[0];
+
+    var rest = _ref42.slice(1);
+
+    if (isType(first, 'string')) {
+        return parser(rest, first.value);
+    }
+    throw SyntaxError('Expected a table name, found "' + (first.string || '(end of input)') + '"');
 }
 
-function comma(tokens) {
-    var first = tokens[0];
-    if (first && first.type === 'comma') {
-        return parser(tokens.slice(1), ',');
-    } else throw SyntaxError('Expected a comma, found "' + (first.string || '(end of input)') + '"');
+function comma(_ref5) {
+    var _ref52 = _toArray(_ref5);
+
+    var first = _ref52[0];
+
+    var rest = _ref52.slice(1);
+
+    if (isType(first, 'comma')) {
+        return parser(rest, ',');
+    }
+    throw SyntaxError('Expected a comma, found "' + (first.string || '(end of input)') + '"');
+}
+
+function parClose(_ref6) {
+    var _ref62 = _toArray(_ref6);
+
+    var first = _ref62[0];
+
+    var rest = _ref62.slice(1);
+
+    if (isType(first, 'parClose')) {
+        return parser(rest, ')');
+    }
+    throw SyntaxError('Expected a closing parenthesis, found "' + (first.string || '(end of input)') + '"');
 }
 
 function many(parseFunc) {
-    var _ref3 = arguments[1] === undefined ? {} : arguments[1];
+    var _ref7 = arguments[1] === undefined ? {} : arguments[1];
 
-    var separator = _ref3.separator;
+    var separator = _ref7.separator;
 
     return function (tokens) {
         var node = undefined,
@@ -144,6 +200,16 @@ function many(parseFunc) {
         }
         return parser(rest, parts);
     };
+}
+
+function isType(node) {
+    for (var _len = arguments.length, types = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+        types[_key - 1] = arguments[_key];
+    }
+
+    return node && types.some(function (type) {
+        return node.type === type;
+    });
 }
 
 var tokenTypes = {
@@ -188,6 +254,13 @@ function tokenize(query) {
     });
 }
 
+function printRest(parser) {
+    console.log(parser.rest.map(function (token) {
+        return _defineProperty({}, token.type, token.string);
+    }));
+    return parser;
+}
+
 function parser(rest) {
     var node = arguments[1] === undefined ? {} : arguments[1];
 
@@ -195,13 +268,19 @@ function parser(rest) {
         rest: rest,
         node: node,
         bind: function bind(key, parseFunc) {
-            var child = parseFunc(this.rest);
-            var newNode = {};
-            for (var oldKey in this.node) {
-                newNode[oldKey] = this.node[oldKey];
-            }
-            newNode[key] = child.node;
-            return parser(child.rest, newNode);
+            var _parseFunc3 = parseFunc(this.rest);
+
+            var rest = _parseFunc3.rest;
+            var node = _parseFunc3.node;
+
+            return parser(rest, merge(this.node, _defineProperty({}, key, node)));
+        },
+        then: function then(parseFunc) {
+            var _parseFunc4 = parseFunc(this.rest);
+
+            var rest = _parseFunc4.rest;
+
+            return parser(rest, this.node);
         },
         mapNode: function mapNode(func) {
             return parser(this.rest, func(this.node));

@@ -14,14 +14,36 @@ function parseQuery(query) {
     var rest = _parseSubQuery.rest;
 
     if (rest.length > 0) {
-        throw SyntaxError('Parser completed with input remaining: "' + rest + '"');
+        var restString = rest.map(function (token) {
+            return token.string;
+        }).join(' ');
+        throw SyntaxError('Parser completed with input remaining: "' + restString + '"');
     }
     return node;
 }
 
 function parseSubQuery(query) {
     var tokens = tokenize(query);
-    return parser(tokens).bind('type', keyword('SELECT')).bind('outputColumns', many(namedExpression, { separator: comma })).bind('from', keyword('FROM')).bind('primaryTable', tableName);
+    return parser(tokens).bind('type', keyword('SELECT')).bind('outputColumns', many(namedExpression, { separator: comma })).bind('from', keyword('FROM')).bind('primaryTable', tableName).map(limitClause);
+}
+
+function limitClause(context) {
+    var node = context.node;
+
+    var _context$rest = _toArray(context.rest);
+
+    var first = _context$rest[0];
+
+    var rest = _context$rest.slice(1);
+
+    if (first && isKeyword('LIMIT', first)) {
+        if (rest[0] && rest[0].type === 'number') {
+            return parser(rest.slice(1), merge(node, { limit: rest[0].value }));
+        } else {
+            var found = rest[0] ? rest[0].string : '(end of input)';
+            throw SyntaxError('Expected a number in limit clause, found "' + found + '"');
+        }
+    } else return context;
 }
 
 function keyword(word) {
@@ -152,7 +174,7 @@ function tokenize(query) {
         }
         throw Error('unable to tokenize: ' + JSON.stringify(rest));
     }
-    var keywordRegex = /^(SELECT|FROM|WHERE|GROUP|BY|AS|AND|OR)$/i;
+    var keywordRegex = /^(SELECT|FROM|WHERE|GROUP|BY|AS|AND|OR|LIMIT)$/i;
     return tokens.map(function (token) {
         if (token.type === 'word' && keywordRegex.test(token.string)) {
             token.type = 'keyword';
@@ -183,5 +205,21 @@ function parser(rest) {
         },
         mapNode: function mapNode(func) {
             return parser(this.rest, func(this.node));
+        },
+        map: function map(func) {
+            return func(this);
         } };
+}
+
+function merge(a, b) {
+    var merged = {};
+    for (var key in a) {
+        if (a.hasOwnProperty(key)) {
+            merged[key] = a[key];
+        }
+    }for (var key in b) {
+        if (b.hasOwnProperty(key)) {
+            merged[key] = b[key];
+        }
+    }return merged;
 }

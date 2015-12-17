@@ -2,7 +2,8 @@
 export function parseQuery(query) {
     const {node, rest} = parseSubQuery(query);
     if (rest.length > 0) {
-        throw SyntaxError(`Parser completed with input remaining: "${rest}"`);
+        const restString = rest.map(token => token.string).join(' ');
+        throw SyntaxError(`Parser completed with input remaining: "${restString}"`);
     }
     return node;
 }
@@ -13,7 +14,22 @@ function parseSubQuery(query) {
         .bind('type', keyword('SELECT'))
         .bind('outputColumns', many(namedExpression, {separator: comma}))
         .bind('from', keyword('FROM'))
-        .bind('primaryTable', tableName);
+        .bind('primaryTable', tableName)
+        .map(limitClause);
+}
+
+function limitClause(context) {
+    const {node, rest: [first, ...rest]} = context;
+    if (first && isKeyword('LIMIT', first)) {
+        if (rest[0] && rest[0].type === 'number') {
+            return parser(rest.slice(1), merge(node, {limit: rest[0].value}));
+        }
+        else {
+            const found = rest[0] ? rest[0].string : '(end of input)';
+            throw SyntaxError(`Expected a number in limit clause, found "${found}"`);
+        }
+    }
+    else return context;
 }
 
 function keyword(word) {
@@ -130,7 +146,7 @@ function tokenize(query) {
         }
         throw Error("unable to tokenize: " + JSON.stringify(rest));
     }
-    const keywordRegex = /^(SELECT|FROM|WHERE|GROUP|BY|AS|AND|OR)$/i;
+    const keywordRegex = /^(SELECT|FROM|WHERE|GROUP|BY|AS|AND|OR|LIMIT)$/i;
     return tokens.map(token => {
         if (token.type === 'word' && keywordRegex.test(token.string)) {
             token.type = 'keyword';
@@ -162,5 +178,19 @@ function parser(rest, node={}) {
         mapNode(func) {
             return parser(this.rest, func(this.node));
         },
+        map(func) {
+            return func(this);
+        },
     };
+}
+
+function merge(a, b) {
+    const merged = {};
+    for (let key in a) if (a.hasOwnProperty(key)) {
+        merged[key] = a[key];
+    }
+    for (let key in b) if (b.hasOwnProperty(key)) {
+        merged[key] = b[key];
+    }
+    return merged;
 }

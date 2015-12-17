@@ -14,8 +14,11 @@ var _parserJs = require('./parser.js');
 
 var _selectJs = require('./select.js');
 
-var query = (0, _parserJs.parseQuery)(process.argv[2]);
+var _limitJs = require('./limit.js');
 
-_fs2['default'].createReadStream(query.primaryTable).pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform(function (row, callback) {
-	callback(null, (0, _selectJs.performSelect)(query, row));
-})).pipe(_csv2['default'].stringify({ header: true })).pipe(process.stdout);
+var query = (0, _parserJs.parseQuery)(process.argv[2]);
+//console.log(query);
+
+var readStream = _fs2['default'].createReadStream(query.primaryTable);
+
+readStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _selectJs.performSelect)(query))).pipe(_csv2['default'].transform((0, _limitJs.performLimit)(query))).pipe(_csv2['default'].stringify({ header: true })).pipe(process.stdout);

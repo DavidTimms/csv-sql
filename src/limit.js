@@ -1,8 +1,13 @@
 
-export function performLimit({limit}) {
+export function performLimit({limit}, stopReading) {
 	let rowCount = 0;
+	let stopped = false;
 	return row => {
 		if (rowCount >= limit) {
+			if (!stopped) {
+				stopReading();
+				stopped = true;
+			}
 			return null;
 		}
 		else {

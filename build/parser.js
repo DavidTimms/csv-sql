@@ -26,7 +26,7 @@ function parseQuery(query) {
 
 function parseSubQuery(query) {
     var tokens = tokenize(query);
-    return parser(tokens).then(keyword('SELECT')).bind('outputColumns', many(namedExpression, { separator: comma })).then(keyword('FROM')).bind('primaryTable', tableName).map(limitClause);
+    return parser(tokens).then(keyword('SELECT')).bind('outputColumns', outputColumns).then(keyword('FROM')).bind('primaryTable', tableName).map(limitClause);
 }
 
 function limitClause(context) {
@@ -38,7 +38,7 @@ function limitClause(context) {
 
     var rest = _context$rest.slice(1);
 
-    if (first && isKeyword('LIMIT', first)) {
+    if (isKeyword('LIMIT', first)) {
         if (rest[0] && rest[0].type === 'number') {
             return parser(rest.slice(1), merge(node, { limit: rest[0].value }));
         } else {
@@ -56,7 +56,7 @@ function identifier(_ref2) {
     var rest = _ref22.slice(1);
 
     if (isType(first, 'word')) {
-        return parser(rest, first.string.toLowerCase());
+        return parser(rest, first);
     }
     throw SyntaxError('Expected an identifier, found "' + (first.string || '(end of input)') + '"');
 }
@@ -87,7 +87,6 @@ function atom(_ref3) {
                 return arg.string;
             }).join(', ');
             node.string = '' + node.functionName + '(' + argsString + ')';
-            return node;
         });
     } else if (isType(first, 'word', 'number', 'string')) {
         return parser(rest, first);
@@ -120,8 +119,17 @@ function namedExpression(tokens) {
         name: expressionToName(exp) };
 
     if (isKeyword('AS', rest[0])) {
-        return parser(rest.slice(1), node).bind('name', identifier);
+        return parser(rest.slice(1), node).bind('name', atom).mapNode(function (node) {
+            node.name = node.name.value || node.name.string;
+        });
     } else return parser(rest, node);
+}
+
+function outputColumns(tokens) {
+    if (isType(tokens[0], 'star')) {
+        return parser(tokens.slice(1), '*');
+    }
+    return many(namedExpression, { separator: comma })(tokens);
 }
 
 function tableName(_ref4) {
@@ -167,29 +175,25 @@ function many(parseFunc) {
     var _ref7 = arguments[1] === undefined ? {} : arguments[1];
 
     var separator = _ref7.separator;
+    var min = _ref7.min;
 
+    if (min === undefined) min = 1;
     return function (tokens) {
         var node = undefined,
-            rest = undefined;
+            rest = tokens;
         var parts = [];
         try {
-            var _parseFunc = parseFunc(tokens);
-
-            node = _parseFunc.node;
-            rest = _parseFunc.rest;
-
-            parts.push(node);
-            while (rest.length > 0) {
-                if (separator) {
+            for (var i = 0; rest.length > 0; i++) {
+                if (separator && i > 0) {
                     var _separator = separator(rest);
 
                     rest = _separator.rest;
                 }
 
-                var _parseFunc2 = parseFunc(rest);
+                var _parseFunc = parseFunc(rest);
 
-                node = _parseFunc2.node;
-                rest = _parseFunc2.rest;
+                node = _parseFunc.node;
+                rest = _parseFunc.rest;
 
                 parts.push(node);
             }
@@ -197,6 +201,9 @@ function many(parseFunc) {
             if (!(e instanceof SyntaxError)) {
                 throw e;
             }
+        }
+        if (parts.length < min) {
+            throwUnexpected(rest[0]);
         }
         return parser(rest, parts);
     };
@@ -254,6 +261,10 @@ function tokenize(query) {
     });
 }
 
+function throwUnexpected(token) {
+    throw SyntaxError('Unexpected token: "' + token.string + '"');
+}
+
 function printRest(parser) {
     console.log(parser.rest.map(function (token) {
         return _defineProperty({}, token.type, token.string);
@@ -268,22 +279,24 @@ function parser(rest) {
         rest: rest,
         node: node,
         bind: function bind(key, parseFunc) {
-            var _parseFunc3 = parseFunc(this.rest);
+            var _parseFunc2 = parseFunc(this.rest);
 
-            var rest = _parseFunc3.rest;
-            var node = _parseFunc3.node;
+            var rest = _parseFunc2.rest;
+            var node = _parseFunc2.node;
 
             return parser(rest, merge(this.node, _defineProperty({}, key, node)));
         },
         then: function then(parseFunc) {
-            var _parseFunc4 = parseFunc(this.rest);
+            var _parseFunc3 = parseFunc(this.rest);
 
-            var rest = _parseFunc4.rest;
+            var rest = _parseFunc3.rest;
 
             return parser(rest, this.node);
         },
         mapNode: function mapNode(func) {
-            return parser(this.rest, func(this.node));
+            var mapped = func(this.node);
+
+            return parser(this.rest, mapped === undefined ? this.node : mapped);
         },
         map: function map(func) {
             return func(this);

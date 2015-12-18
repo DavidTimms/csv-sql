@@ -11,6 +11,9 @@ function performSelect(query) {
 	return function (inRow) {
 		var outRow = {};
 		var outputColumns = query.outputColumns;
+		if (outputColumns === '*') {
+			return inRow;
+		}
 		for (var i = 0; i < outputColumns.length; i++) {
 			var value = evaluateExpression(outputColumns[i].expression, inRow);
 			outRow[outputColumns[i].name] = value;

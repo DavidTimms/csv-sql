@@ -12,7 +12,7 @@ function parseSubQuery(query) {
     const tokens = tokenize(query);
     return parser(tokens)
         .then(keyword('SELECT'))
-        .bind('outputColumns', many(namedExpression, {separator: comma}))
+        .bind('outputColumns', outputColumns)
         .then(keyword('FROM'))
         .bind('primaryTable', tableName)
         .map(limitClause);
@@ -20,7 +20,7 @@ function parseSubQuery(query) {
 
 function limitClause(context) {
     const {node, rest: [first, ...rest]} = context;
-    if (first && isKeyword('LIMIT', first)) {
+    if (isKeyword('LIMIT', first)) {
         if (rest[0] && rest[0].type === 'number') {
             return parser(rest.slice(1), merge(node, {limit: rest[0].value}));
         }
@@ -34,7 +34,7 @@ function limitClause(context) {
 
 function identifier([first, ...rest]) {
     if (isType(first, 'word')) {
-        return parser(rest, first.string.toLowerCase());
+        return parser(rest, first);
     }
     throw SyntaxError(
         `Expected an identifier, found "${first.string || '(end of input)'}"`);
@@ -63,7 +63,6 @@ function atom([first, ...rest]) {
             .mapNode(node => {
                 const argsString = node.arguments.map(arg => arg.string).join(', ');
                 node.string = `${node.functionName}(${argsString})`;
-                return node;
             });
     }
     else if (isType(first, 'word', 'number', 'string')) {
@@ -92,9 +91,20 @@ function namedExpression(tokens) {
     };
 
     if (isKeyword('AS', rest[0])) {
-        return parser(rest.slice(1), node).bind('name', identifier);
+        return parser(rest.slice(1), node)
+            .bind('name', atom)
+            .mapNode(node => {
+                node.name = node.name.value || node.name.string;
+            });
     }
     else return parser(rest, node);
+}
+
+function outputColumns(tokens) {
+    if (isType(tokens[0], 'star')) {
+        return parser(tokens.slice(1), '*');
+    }
+    return many(namedExpression, {separator: comma})(tokens);
 }
 
 function tableName([first, ...rest]) {
@@ -121,15 +131,14 @@ function parClose([first, ...rest]) {
         `Expected a closing parenthesis, found "${first.string || '(end of input)'}"`);
 }
 
-function many(parseFunc, {separator}={}) {
+function many(parseFunc, {separator, min}={}) {
+    if (min === undefined) min = 1;
     return tokens => {
-        let node, rest;
+        let node, rest = tokens;
         const parts = [];
         try {
-            ({node, rest} = parseFunc(tokens));
-            parts.push(node);
-            while (rest.length > 0) {
-                if (separator) {
+            for (let i = 0; rest.length > 0; i ++) {
+                if (separator && i > 0) {
                     ({rest} = separator(rest));
                 }
                 ({node, rest} = parseFunc(rest));
@@ -140,6 +149,9 @@ function many(parseFunc, {separator}={}) {
             if (!(e instanceof SyntaxError)) {
                 throw e;
             }
+        }
+        if (parts.length < min) {
+            throwUnexpected(rest[0]);
         }
         return parser(rest, parts);
     };
@@ -195,6 +207,10 @@ function tokenize(query) {
     });
 }
 
+function throwUnexpected(token) {
+    throw SyntaxError(`Unexpected token: "${token.string}"`);
+}
+
 function printRest(parser) {
     console.log(parser.rest.map(token => ({[token.type]: token.string})));
     return parser;
@@ -213,7 +229,9 @@ function parser(rest, node={}) {
             return parser(rest, this.node);
         },
         mapNode(func) {
-            return parser(this.rest, func(this.node));
+            const mapped = func(this.node);
+
+            return parser(this.rest, mapped === undefined ? this.node : mapped);
         },
         map(func) {
             return func(this);

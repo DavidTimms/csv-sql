@@ -9,11 +9,20 @@ import {performLimit} from './limit.js';
 const query = parseQuery(process.argv[2]);
 //console.log(JSON.stringify(query, null, 4));
 
-const readStream = fs.createReadStream(query.primaryTable);
+const primaryTableFileDescriptor = fs.openSync(query.primaryTable, 'r');
+const primaryTableReadStream = fs.createReadStream(
+	null,
+	{fd: primaryTableFileDescriptor}
+);
 
-readStream
+function stopReading() {
+	fs.closeSync(primaryTableFileDescriptor);
+	primaryTableReadStream.destroy();
+}
+
+primaryTableReadStream
 	.pipe(csv.parse({columns: true}))
 	.pipe(csv.transform(performSelect(query)))
-	.pipe(csv.transform(performLimit(query)))
+	.pipe(csv.transform(performLimit(query, stopReading)))
 	.pipe(csv.stringify({header: true}))
 	.pipe(process.stdout);

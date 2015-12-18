@@ -19,6 +19,12 @@ var _limitJs = require('./limit.js');
 var query = (0, _parserJs.parseQuery)(process.argv[2]);
 //console.log(JSON.stringify(query, null, 4));
 
-var readStream = _fs2['default'].createReadStream(query.primaryTable);
+var primaryTableFileDescriptor = _fs2['default'].openSync(query.primaryTable, 'r');
+var primaryTableReadStream = _fs2['default'].createReadStream(null, { fd: primaryTableFileDescriptor });
 
-readStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _selectJs.performSelect)(query))).pipe(_csv2['default'].transform((0, _limitJs.performLimit)(query))).pipe(_csv2['default'].stringify({ header: true })).pipe(process.stdout);
+function stopReading() {
+	_fs2['default'].closeSync(primaryTableFileDescriptor);
+	primaryTableReadStream.destroy();
+}
+
+primaryTableReadStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _selectJs.performSelect)(query))).pipe(_csv2['default'].transform((0, _limitJs.performLimit)(query, stopReading))).pipe(_csv2['default'].stringify({ header: true })).pipe(process.stdout);

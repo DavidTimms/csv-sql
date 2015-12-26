@@ -26,6 +26,7 @@ function evaluateExpression(exp, context) {
 	switch (exp.type) {
 		case 'number':
 		case 'string':
+		case 'literal':
 			return exp.value;
 		case 'word':
 			return context[exp.string];
@@ -37,9 +38,35 @@ function evaluateExpression(exp, context) {
 				return functions[exp.functionName].apply(functions, _toConsumableArray(argValues));
 			}
 			throw ReferenceError('SQL function not found: ' + exp.functionName);
+		case 'binaryExpression':
+			return performBinaryOperation(exp.operator, evaluateExpression(exp.left, context), evaluateExpression(exp.right, context));
 		default:
 			throw Error('Unexpected expression type: ' + exp.type);
 	}
+}
+
+function performBinaryOperation(operator, left, right) {
+	switch (operator) {
+		case '=':
+			return str(left) === str(right);
+		case '!=':
+		case '<>':
+			return str(left) !== str(right);
+		case '>':
+			return +left > +right;
+		case '<':
+			return +left < +right;
+		case '>=':
+			return +left >= +right;
+		case '<=':
+			return +left <= +right;
+		default:
+			throw Error('Unknown operator: ' + operator);
+	}
+}
+
+function str(value) {
+	if (value === null || value === undefined) return '';else return String(value);
 }
 
 var functions = {

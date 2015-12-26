@@ -18,20 +18,50 @@ function evaluateExpression(exp, context) {
 	switch (exp.type) {
 		case 'number':
 		case 'string':
+		case 'literal':
 			return exp.value;
 		case 'word':
 			return context[exp.string];
 		case 'call':
 			if (exp.functionName in functions) {
 				const argValues = exp.arguments.map(
-					arg => evaluateExpression(arg, context)
-				);
+					arg => evaluateExpression(arg, context));
 				return functions[exp.functionName](...argValues);
 			}
 			throw ReferenceError(`SQL function not found: ${exp.functionName}`);
+		case 'binaryExpression':
+			return performBinaryOperation(
+				exp.operator,
+				evaluateExpression(exp.left, context),
+				evaluateExpression(exp.right, context));
 		default:
 			throw Error(`Unexpected expression type: ${exp.type}`);
 	}
+}
+
+function performBinaryOperation(operator, left, right) {
+	switch (operator) {
+		case '=':
+			return str(left) === str(right);
+		case '!=':
+		case '<>':
+			return str(left) !== str(right);
+		case '>':
+			return +left > +right;
+		case '<':
+			return +left < +right;
+		case '>=':
+			return +left >= +right;
+		case '<=':
+			return +left <= +right;
+		default:
+			throw Error(`Unknown operator: ${operator}`);	
+	}
+}
+
+function str(value) {
+	if (value === null || value === undefined) return '';
+	else return String(value);
 }
 
 const functions = {

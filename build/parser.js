@@ -4,6 +4,7 @@ Object.defineProperty(exports, '__esModule', {
     value: true
 });
 exports.parseQuery = parseQuery;
+exports.tokenize = tokenize;
 
 function _toArray(arr) { return Array.isArray(arr) ? arr : Array.from(arr); }
 
@@ -48,19 +49,6 @@ function limitClause(context) {
     } else return context;
 }
 
-function identifier(_ref2) {
-    var _ref22 = _toArray(_ref2);
-
-    var first = _ref22[0];
-
-    var rest = _ref22.slice(1);
-
-    if (isType(first, 'word')) {
-        return parser(rest, first);
-    }
-    throw SyntaxError('Expected an identifier, found "' + (first.string || '(end of input)') + '"');
-}
-
 function keyword(word) {
     return function (tokens) {
         var first = tokens[0];
@@ -74,37 +62,62 @@ function isKeyword(word, token) {
     return token && token.type === 'keyword' && token.string === word;
 }
 
-function atom(_ref3) {
-    var _ref32 = _toArray(_ref3);
+function atom(_ref2) {
+    var _ref22 = _toArray(_ref2);
 
-    var first = _ref32[0];
+    var first = _ref22[0];
 
-    var rest = _ref32.slice(1);
+    var rest = _ref22.slice(1);
 
-    if (isType(first, 'word') && isType(rest[0], 'parOpen')) {
+    // grouped expression
+    if (isType(first, 'parOpen')) {
+        return expression(rest).then(parClose);
+    }
+    // literal TRUE, FALSE, or NULL
+    else if (isType(first, 'keyword')) {
+        switch (first.string) {
+            case 'TRUE':
+            case 'FALSE':
+            case 'NULL':
+                return parser(rest, {
+                    type: 'literal',
+                    value: JSON.parse(first.string.toLowerCase()),
+                    string: first.string });
+        }
+    }
+    // function call
+    else if (isType(first, 'word') && isType(rest[0], 'parOpen')) {
         return parser(rest.slice(1), { type: 'call', functionName: first.string.toUpperCase() }).bind('arguments', many(expression, { separator: comma, min: 0 })).then(parClose).mapNode(function (node) {
             var argsString = node.arguments.map(function (arg) {
                 return arg.string;
             }).join(', ');
             node.string = '' + node.functionName + '(' + argsString + ')';
         });
-    } else if (isType(first, 'word', 'number', 'string')) {
+    }
+    // identifier, number, or string
+    else if (isType(first, ['word', 'number', 'string'])) {
         return parser(rest, first);
     }
+
     throw SyntaxError('Expected an expression, found "' + (first.string || '(end of input)') + '"');
 }
 
 function expression(tokens) {
-    var _atom = atom(tokens);
-
-    var rest = _atom.rest;
-    var left = _atom.node;
-
-    return parser(rest, left);
+    return atom(tokens).ifNextToken(isType('operator'), function (curr) {
+        return curr.mapNode(function (left) {
+            return { type: 'binaryExpression', left: left };
+        }).bind('operator', operator).bind('right', expression).mapNode(function (node) {
+            var leftString = parenWrappedBinaryExpString(node.left);
+            var rightString = parenWrappedBinaryExpString(node.right);
+            node.string = '' + leftString + ' ' + node.operator + ' ' + rightString;
+        });
+    });
 }
 
-function expressionToName(exp) {
-    return exp.string;
+function parenWrappedBinaryExpString(exp) {
+    if (exp.type === 'binaryExpression') {
+        return '(' + exp.string + ')';
+    } else return exp.string;
 }
 
 function namedExpression(tokens) {
@@ -116,7 +129,7 @@ function namedExpression(tokens) {
     var node = {
         type: 'namedExpression',
         expression: exp,
-        name: expressionToName(exp) };
+        name: exp.string };
 
     if (isKeyword('AS', rest[0])) {
         return parser(rest.slice(1), node).bind('name', atom).mapNode(function (node) {
@@ -132,50 +145,40 @@ function outputColumns(tokens) {
     return many(namedExpression, { separator: comma })(tokens);
 }
 
-function tableName(_ref4) {
-    var _ref42 = _toArray(_ref4);
+var tableName = parseTokenType('string', { expected: 'a table name' });
+var identifier = parseTokenType('word', 'an identifier');
+var operator = parseTokenType('operator', { expected: 'an operator' });
+var comma = parseTokenType('comma');
+var parOpen = parseTokenType('parOpen', { expected: 'an opening parenthesis' });
+var parClose = parseTokenType('parClose', { expected: 'a closing parenthesis' });
 
-    var first = _ref42[0];
+function parseTokenType(typeName) {
+    var _ref3 = arguments[1] === undefined ? {} : arguments[1];
 
-    var rest = _ref42.slice(1);
+    var expected = _ref3.expected;
 
-    if (isType(first, 'string')) {
-        return parser(rest, first.value);
-    }
-    throw SyntaxError('Expected a table name, found "' + (first.string || '(end of input)') + '"');
-}
+    expected = expected || 'a ' + typeName;
 
-function comma(_ref5) {
-    var _ref52 = _toArray(_ref5);
+    return function (_ref4) {
+        var _ref42 = _toArray(_ref4);
 
-    var first = _ref52[0];
+        var first = _ref42[0];
 
-    var rest = _ref52.slice(1);
+        var rest = _ref42.slice(1);
 
-    if (isType(first, 'comma')) {
-        return parser(rest, ',');
-    }
-    throw SyntaxError('Expected a comma, found "' + (first.string || '(end of input)') + '"');
-}
-
-function parClose(_ref6) {
-    var _ref62 = _toArray(_ref6);
-
-    var first = _ref62[0];
-
-    var rest = _ref62.slice(1);
-
-    if (isType(first, 'parClose')) {
-        return parser(rest, ')');
-    }
-    throw SyntaxError('Expected a closing parenthesis, found "' + (first.string || '(end of input)') + '"');
+        if (isType(first, typeName)) {
+            return parser(rest, first.value || first.string);
+        }
+        var found = first && first.string || '(end of input)';
+        throw SyntaxError('Expected ' + expected + ', found "' + found + '"');
+    };
 }
 
 function many(parseFunc) {
-    var _ref7 = arguments[1] === undefined ? {} : arguments[1];
+    var _ref5 = arguments[1] === undefined ? {} : arguments[1];
 
-    var separator = _ref7.separator;
-    var min = _ref7.min;
+    var separator = _ref5.separator;
+    var min = _ref5.min;
 
     if (min === undefined) min = 1;
     return function (tokens) {
@@ -207,13 +210,18 @@ function many(parseFunc) {
         }
         return parser(rest, parts);
     };
-}
+};
 
 function isType(node) {
-    for (var _len = arguments.length, types = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-        types[_key - 1] = arguments[_key];
-    }
+    var types = arguments[1] === undefined ? null : arguments[1];
 
+    if (types === null) {
+        types = node;
+        return function (node) {
+            return isType(node, types);
+        };
+    }
+    if (!Array.isArray(types)) types = [types];
     return node && types.some(function (type) {
         return node.type === type;
     });
@@ -225,7 +233,7 @@ var tokenTypes = {
     parClose: /^\)/,
     star: /^\*/,
     number: /^\d+(\.\d+)?/,
-    operator: /^(=|<=|>=|!=|<|>)/,
+    operator: /^(=|<=|>=|!=|<>|<|>)/,
     string: /^"[^"]*"/,
     comma: /^,/ };
 
@@ -247,11 +255,23 @@ function tokenize(query) {
         }
         throw Error('unable to tokenize: ' + JSON.stringify(rest));
     }
-    var keywordRegex = /^(SELECT|FROM|WHERE|GROUP|BY|AS|AND|OR|LIMIT)$/i;
+
+    var KEYWORDS = ['SELECT', 'FROM', 'WHERE', 'GROUP', 'BY', 'AS', 'LIMIT', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+
+    var WORD_OPERATORS = ['AND', 'OR', 'IS', 'LIKE'];
+
+    var keywordRegex = new RegExp('^(' + KEYWORDS.join('|') + ')$', 'i');
+    var operatorRegex = new RegExp('^(' + WORD_OPERATORS.join('|') + ')$', 'i');
+
     return tokens.map(function (token) {
-        if (token.type === 'word' && keywordRegex.test(token.string)) {
-            token.type = 'keyword';
-            token.string = token.string.toUpperCase();
+        if (token.type === 'word') {
+            if (keywordRegex.test(token.string)) {
+                token.type = 'keyword';
+                token.string = token.string.toUpperCase();
+            } else if (operatorRegex.test(token.string)) {
+                token.type = 'operator';
+                token.string = token.string.toUpperCase();
+            }
         } else if (token.type === 'number') {
             token.value = Number(token.string);
         } else if (token.type === 'string') {
@@ -292,6 +312,13 @@ function parser(rest) {
             var rest = _parseFunc3.rest;
 
             return parser(rest, this.node);
+        },
+        ifNextToken: function ifNextToken(predicate, ifFunc, elseFunc) {
+            if (predicate(this.rest[0])) {
+                return ifFunc(this);
+            } else if (elseFunc) {
+                return elseFunc(this);
+            } else return this;
         },
         mapNode: function mapNode(func) {
             var mapped = func(this.node);

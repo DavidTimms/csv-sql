@@ -32,14 +32,6 @@ function limitClause(context) {
     else return context;
 }
 
-function identifier([first, ...rest]) {
-    if (isType(first, 'word')) {
-        return parser(rest, first);
-    }
-    throw SyntaxError(
-        `Expected an identifier, found "${first.string || '(end of input)'}"`);
-}
-
 function keyword(word) {
     return tokens => {
         const first = tokens[0];
@@ -56,7 +48,25 @@ function isKeyword(word, token) {
 }
 
 function atom([first, ...rest]) {
-    if (isType(first, 'word') && isType(rest[0], 'parOpen')) {
+    // grouped expression
+    if (isType(first, 'parOpen')) {
+        return expression(rest).then(parClose);
+    }
+    // literal TRUE, FALSE, or NULL
+    else if (isType(first, 'keyword')) {
+        switch (first.string) {
+            case 'TRUE':
+            case 'FALSE':
+            case 'NULL':
+                return parser(rest, {
+                    type: 'literal',
+                    value: JSON.parse(first.string.toLowerCase()),
+                    string: first.string,
+                });
+        }
+    }
+    // function call
+    else if (isType(first, 'word') && isType(rest[0], 'parOpen')) {
         return parser(rest.slice(1), {type: 'call', functionName: first.string.toUpperCase()})
             .bind('arguments', many(expression, {separator: comma, min: 0}))
             .then(parClose)
@@ -65,20 +75,33 @@ function atom([first, ...rest]) {
                 node.string = `${node.functionName}(${argsString})`;
             });
     }
-    else if (isType(first, 'word', 'number', 'string')) {
+    // identifier, number, or string
+    else if (isType(first, ['word', 'number', 'string'])) {
         return parser(rest, first);
     }
+
     throw SyntaxError(
         `Expected an expression, found "${first.string || '(end of input)'}"`);
 }
 
 function expression(tokens) {
-    const {rest, node: left} = atom(tokens);
-    return parser(rest, left);
+    return atom(tokens).ifNextToken(isType('operator'), curr => 
+        curr.mapNode(left => ({type: 'binaryExpression', left}))
+            .bind('operator', operator)
+            .bind('right', expression)
+            .mapNode(node => {
+                const leftString = parenWrappedBinaryExpString(node.left);
+                const rightString = parenWrappedBinaryExpString(node.right);
+                node.string = `${leftString} ${node.operator} ${rightString}`;
+            })
+    );
 }
 
-function expressionToName(exp) {
-    return exp.string;
+function parenWrappedBinaryExpString(exp) {
+    if (exp.type === 'binaryExpression') {
+        return `(${exp.string})`;
+    }
+    else return exp.string;
 }
 
 function namedExpression(tokens) {
@@ -87,7 +110,7 @@ function namedExpression(tokens) {
     const node = {
         type: 'namedExpression',
         expression: exp,
-        name: expressionToName(exp),
+        name: exp.string,
     };
 
     if (isKeyword('AS', rest[0])) {
@@ -107,28 +130,23 @@ function outputColumns(tokens) {
     return many(namedExpression, {separator: comma})(tokens);
 }
 
-function tableName([first, ...rest]) {
-    if (isType(first, 'string')) {
-        return parser(rest, first.value);
-    }
-    throw SyntaxError(
-        `Expected a table name, found "${first.string || '(end of input)'}"`);
-}
+const tableName = parseTokenType('string', {expected: 'a table name'});
+const identifier = parseTokenType('word', 'an identifier');
+const operator = parseTokenType('operator', {expected: 'an operator'});
+const comma = parseTokenType('comma');
+const parOpen = parseTokenType('parOpen', {expected: 'an opening parenthesis'});
+const parClose = parseTokenType('parClose', {expected: 'a closing parenthesis'});
 
-function comma([first, ...rest]) {
-    if (isType(first, 'comma')) {
-        return parser(rest, ',');
-    }
-    throw SyntaxError(
-        `Expected a comma, found "${first.string || '(end of input)'}"`);
-}
+function parseTokenType(typeName, {expected}={}) {
+    expected = expected || 'a ' + typeName;
 
-function parClose([first, ...rest]) {
-    if (isType(first, 'parClose')) {
-        return parser(rest, ')');
-    }
-    throw SyntaxError(
-        `Expected a closing parenthesis, found "${first.string || '(end of input)'}"`);
+    return ([first, ...rest]) => {
+        if (isType(first, typeName)) {
+            return parser(rest, first.value || first.string);
+        }
+        const found = first && first.string || '(end of input)';
+        throw SyntaxError(`Expected ${expected}, found "${found}"`);
+    };
 }
 
 function many(parseFunc, {separator, min}={}) {
@@ -155,9 +173,14 @@ function many(parseFunc, {separator, min}={}) {
         }
         return parser(rest, parts);
     };
-}
+};
 
-function isType(node, ...types) {
+function isType(node, types=null) {
+    if (types === null) {
+        types = node;
+        return node => isType(node, types);
+    }
+    if (!Array.isArray(types)) types = [types];
     return node && types.some(type => node.type === type);
 }
 
@@ -167,12 +190,12 @@ var tokenTypes = {
     parClose: /^\)/,
     star: /^\*/,
     number: /^\d+(\.\d+)?/,
-    operator: /^(=|<=|>=|!=|<|>)/,
+    operator: /^(=|<=|>=|!=|<>|<|>)/,
     string: /^"[^"]*"/,
     comma: /^,/,
 };
 
-function tokenize(query) {
+export function tokenize(query) {
     const tokens = [];
     let rest = query;
 
@@ -191,11 +214,46 @@ function tokenize(query) {
         }
         throw Error("unable to tokenize: " + JSON.stringify(rest));
     }
-    const keywordRegex = /^(SELECT|FROM|WHERE|GROUP|BY|AS|AND|OR|LIMIT)$/i;
+
+    const KEYWORDS = [
+        'SELECT',
+        'FROM',
+        'WHERE',
+        'GROUP',
+        'BY',
+        'AS',
+        'LIMIT',
+        'CASE',
+        'WHEN',
+        'THEN',
+        'ELSE',
+        'END',
+        'NOT',
+        'NULL',
+        'TRUE',
+        'FALSE',
+    ];
+
+    const WORD_OPERATORS = [
+        'AND',
+        'OR',
+        'IS',
+        'LIKE',
+    ];
+
+    const keywordRegex = new RegExp(`^(${ KEYWORDS.join('|') })$`, 'i');
+    const operatorRegex = new RegExp(`^(${ WORD_OPERATORS.join('|') })$`, 'i');
+
     return tokens.map(token => {
-        if (token.type === 'word' && keywordRegex.test(token.string)) {
-            token.type = 'keyword';
-            token.string = token.string.toUpperCase();
+        if (token.type === 'word') {
+            if (keywordRegex.test(token.string)) {
+                token.type = 'keyword';
+                token.string = token.string.toUpperCase();
+            }
+            else if (operatorRegex.test(token.string)) {
+                token.type = 'operator';
+                token.string = token.string.toUpperCase();
+            }
         }
         else if (token.type === 'number') {
             token.value = Number(token.string);
@@ -227,6 +285,15 @@ function parser(rest, node={}) {
         then(parseFunc) {
             const {rest} = parseFunc(this.rest);
             return parser(rest, this.node);
+        },
+        ifNextToken(predicate, ifFunc, elseFunc) {
+            if (predicate(this.rest[0])) {
+                return ifFunc(this);
+            }
+            else if (elseFunc) {
+                return elseFunc(this);
+            }
+            else return this;
         },
         mapNode(func) {
             const mapped = func(this.node);

@@ -4,7 +4,9 @@
   "description": "A command line tool for running SQL queries on CSV files.",
   "main": "csv-sql.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "cd ./build && mocha",
+    "build": "babel src --out-dir build",
+    "watch": "babel --watch src --out-dir build"
   },
   "keywords": [
     "csv",
@@ -14,5 +16,9 @@
   "license": "ISC",
   "dependencies": {
     "csv": "^0.4.6"
+  },
+  "devDependencies": {
+    "chai": "^3.4.1",
+    "mocha": "^2.3.4"
   }
 }

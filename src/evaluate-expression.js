@@ -61,4 +61,16 @@ const functions = {
     LOWERCASE(s) {
         return s === null && s === undefined ? null : String(s).toLowerCase();
     },
+    COALESCE(...args) {
+        for (let i = 0; i < args.length; i++) {
+            if (!isNull(args[i])) return args[i];
+        }
+        return null;
+    },
+};
+
+functions.IFNULL = functions.COALESCE;
+
+function isNull(value) {
+    return value === null || value === undefined;
 }

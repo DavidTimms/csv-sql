@@ -65,4 +65,20 @@ var functions = {
     },
     LOWERCASE: function LOWERCASE(s) {
         return s === null && s === undefined ? null : String(s).toLowerCase();
+    },
+    COALESCE: function COALESCE() {
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+        }
+
+        for (var i = 0; i < args.length; i++) {
+            if (!isNull(args[i])) return args[i];
+        }
+        return null;
     } };
+
+functions.IFNULL = functions.COALESCE;
+
+function isNull(value) {
+    return value === null || value === undefined;
+}

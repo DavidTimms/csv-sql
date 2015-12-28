@@ -23,7 +23,7 @@ describe('tokenize', function () {
         _chai.assert.deepEqual(tokens, [{ type: 'number', string: '3', value: 3 }, { type: 'number', string: '56.3', value: 56.3 }, { type: 'number', string: '3.141592', value: 3.141592 }, { type: 'number', string: '9832', value: 9832 }, { type: 'number', string: '293829047240', value: 293829047240 }]);
     });
 
-    it('should detect string basic literals', function () {
+    it('should detect basic string literals', function () {
         var tokens = (0, _parser.tokenize)('"hello there"');
 
         _chai.assert.deepEqual(tokens, [{ type: 'string', string: '"hello there"', value: 'hello there' }]);
@@ -70,7 +70,8 @@ describe('parseQuery', function () {
     it('should parse basic starred queries', function () {
         _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT * FROM "example.csv"'), {
             outputColumns: '*',
-            primaryTable: 'example.csv' });
+            primaryTable: 'example.csv',
+            condition: null });
     });
 
     it('should parse queries with an output column list', function () {
@@ -91,36 +92,33 @@ describe('parseQuery', function () {
                     type: 'word',
                     string: 'gender' },
                 name: 'gender' }],
-            primaryTable: 'people.csv' });
+            primaryTable: 'people.csv',
+            condition: null });
     });
 
     it('should parse queries with renamed columns', function () {
-        _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT a AS b FROM "c.csv"'), {
-            outputColumns: [{
-                type: 'namedExpression',
-                expression: {
-                    type: 'word',
-                    string: 'a' },
-                name: 'b' }],
-            primaryTable: 'c.csv' });
+        _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT a AS b FROM "c.csv"').outputColumns, [{
+            type: 'namedExpression',
+            expression: {
+                type: 'word',
+                string: 'a' },
+            name: 'b' }]);
     });
 
     it('should parse queries with binary expressions', function () {
-        _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT a > b FROM "c.csv"'), {
-            outputColumns: [{
-                type: 'namedExpression',
-                expression: {
-                    type: 'binaryExpression',
-                    operator: '>',
-                    left: {
-                        type: 'word',
-                        string: 'a' },
-                    right: {
-                        type: 'word',
-                        string: 'b' },
-                    string: 'a > b' },
-                name: 'a > b' }],
-            primaryTable: 'c.csv' });
+        _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT a > b FROM "c.csv"').outputColumns, [{
+            type: 'namedExpression',
+            expression: {
+                type: 'binaryExpression',
+                operator: '>',
+                left: {
+                    type: 'word',
+                    string: 'a' },
+                right: {
+                    type: 'word',
+                    string: 'b' },
+                string: 'a > b' },
+            name: 'a > b' }]);
     });
 
     it('should allow binary expressions mixed with functions and AS names', function () {
@@ -184,5 +182,32 @@ describe('parseQuery', function () {
                     string: 'c' },
                 string: '(a OR b) AND c' },
             name: '(a OR b) AND c' }]);
+    });
+
+    it('should support correct operator precedence');
+
+    it('should accept a LIMIT clause', function () {
+        var sql = 'SELECT a FROM "b.csv" LIMIT 2';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).limit, 2);
+    });
+
+    it('should accept an OFFSET clause', function () {
+        var sql = 'SELECT a FROM "b.csv" LIMIT 2 OFFSET 3';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).offset, 3);
+    });
+
+    it('should accept a WHERE clause', function () {
+        var sql = 'SELECT a FROM "b.csv" WHERE a > 50';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).condition, {
+            type: 'binaryExpression',
+            operator: '>',
+            left: {
+                type: 'word',
+                string: 'a' },
+            right: {
+                type: 'number',
+                value: 50,
+                string: '50' },
+            string: 'a > 50' });
     });
 });

@@ -27,39 +27,25 @@ function parseQuery(query) {
 
 function parseSubQuery(query) {
     var tokens = tokenize(query);
-    return parser(tokens).then(keyword('SELECT')).bind('outputColumns', outputColumns).then(keyword('FROM')).bind('primaryTable', tableName).map(limitClause);
+    return parser(tokens).then(keyword('SELECT')).bind('outputColumns', outputColumns).then(keyword('FROM')).bind('primaryTable', tableName).bind('condition', whereClause).map(parseLimitClause).map(parseOffsetClause);
 }
 
-function limitClause(context) {
-    var node = context.node;
-
-    var _context$rest = _toArray(context.rest);
-
-    var first = _context$rest[0];
-
-    var rest = _context$rest.slice(1);
-
-    if (isKeyword('LIMIT', first)) {
-        if (rest[0] && rest[0].type === 'number') {
-            return parser(rest.slice(1), merge(node, { limit: rest[0].value }));
-        } else {
-            var found = rest[0] ? rest[0].string : '(end of input)';
-            throw SyntaxError('Expected a number in limit clause, found "' + found + '"');
-        }
-    } else return context;
+function whereClause(tokens) {
+    return parser(tokens, null).ifNextToken(isKeyword('WHERE'), function (curr) {
+        return curr.then(keyword('WHERE')).just(expression);
+    });
 }
 
-function keyword(word) {
-    return function (tokens) {
-        var first = tokens[0];
-        if (isKeyword(word, first)) {
-            return parser(tokens.slice(1), word);
-        } else throw SyntaxError('Expected "' + word + '", found "' + (first.string || '(end of input)') + '"');
-    };
+function parseLimitClause(context) {
+    return context.ifNextToken(isKeyword('LIMIT'), function (curr) {
+        return curr.then(keyword('LIMIT')).bind('limit', number);
+    });
 }
 
-function isKeyword(word, token) {
-    return token && token.type === 'keyword' && token.string === word;
+function parseOffsetClause(context) {
+    return context.ifNextToken(isKeyword('OFFSET'), function (curr) {
+        return curr.then(keyword('OFFSET')).bind('offset', number);
+    });
 }
 
 function atom(_ref2) {
@@ -70,11 +56,11 @@ function atom(_ref2) {
     var rest = _ref22.slice(1);
 
     // grouped expression
-    if (isType(first, 'parOpen')) {
+    if (isType('parOpen', first)) {
         return expression(rest).then(parClose);
     }
     // literal TRUE, FALSE, or NULL
-    else if (isType(first, 'keyword')) {
+    else if (isType('keyword', first)) {
         switch (first.string) {
             case 'TRUE':
             case 'FALSE':
@@ -86,7 +72,7 @@ function atom(_ref2) {
         }
     }
     // function call
-    else if (isType(first, 'word') && isType(rest[0], 'parOpen')) {
+    else if (isType('word', first) && isType('parOpen', rest[0])) {
         return parser(rest.slice(1), { type: 'call', functionName: first.string.toUpperCase() }).bind('arguments', many(expression, { separator: comma, min: 0 })).then(parClose).mapNode(function (node) {
             var argsString = node.arguments.map(function (arg) {
                 return arg.string;
@@ -95,7 +81,7 @@ function atom(_ref2) {
         });
     }
     // identifier, number, or string
-    else if (isType(first, ['word', 'number', 'string'])) {
+    else if (isType(['word', 'number', 'string'], first)) {
         return parser(rest, first);
     }
 
@@ -139,16 +125,26 @@ function namedExpression(tokens) {
 }
 
 function outputColumns(tokens) {
-    if (isType(tokens[0], 'star')) {
+    if (isType('star', tokens[0])) {
         return parser(tokens.slice(1), '*');
     }
     return many(namedExpression, { separator: comma })(tokens);
+}
+
+function keyword(word) {
+    return function (tokens) {
+        var first = tokens[0];
+        if (isKeyword(word, first)) {
+            return parser(tokens.slice(1), word);
+        } else throw SyntaxError('Expected "' + word + '", found "' + (first.string || '(end of input)') + '"');
+    };
 }
 
 var tableName = parseTokenType('string', { expected: 'a table name' });
 var identifier = parseTokenType('word', 'an identifier');
 var operator = parseTokenType('operator', { expected: 'an operator' });
 var comma = parseTokenType('comma');
+var number = parseTokenType('number');
 var parOpen = parseTokenType('parOpen', { expected: 'an opening parenthesis' });
 var parClose = parseTokenType('parClose', { expected: 'a closing parenthesis' });
 
@@ -166,12 +162,33 @@ function parseTokenType(typeName) {
 
         var rest = _ref42.slice(1);
 
-        if (isType(first, typeName)) {
+        if (isType(typeName, first)) {
             return parser(rest, first.value || first.string);
         }
         var found = first && first.string || '(end of input)';
         throw SyntaxError('Expected ' + expected + ', found "' + found + '"');
     };
+}
+
+function isKeyword(keyword, token) {
+    if (arguments.length < 2) {
+        return function (token) {
+            return isKeyword(keyword, token);
+        };
+    }
+    return token && token.type === 'keyword' && token.string === keyword;
+}
+
+function isType(types, token) {
+    if (arguments.length < 2) {
+        return function (token) {
+            return isType(types, token);
+        };
+    }
+    if (!Array.isArray(types)) types = [types];
+    return token && types.some(function (type) {
+        return token.type === type;
+    });
 }
 
 function many(parseFunc) {
@@ -212,21 +229,6 @@ function many(parseFunc) {
     };
 };
 
-function isType(node) {
-    var types = arguments[1] === undefined ? null : arguments[1];
-
-    if (types === null) {
-        types = node;
-        return function (node) {
-            return isType(node, types);
-        };
-    }
-    if (!Array.isArray(types)) types = [types];
-    return node && types.some(function (type) {
-        return node.type === type;
-    });
-}
-
 var tokenTypes = {
     word: /^[a-z_]\w*/i,
     parOpen: /^\(/,
@@ -240,6 +242,10 @@ var tokenTypes = {
 function tokenize(query) {
     var tokens = [];
     var rest = query;
+
+    if (!query) {
+        throw Error('No input to tokenize');
+    }
 
     nextToken: while (true) {
         rest = rest.match(/^\s*([\s\S]*)$/)[1];
@@ -256,7 +262,7 @@ function tokenize(query) {
         throw Error('unable to tokenize: ' + JSON.stringify(rest));
     }
 
-    var KEYWORDS = ['SELECT', 'FROM', 'WHERE', 'GROUP', 'BY', 'AS', 'LIMIT', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+    var KEYWORDS = ['SELECT', 'FROM', 'WHERE', 'GROUP', 'BY', 'AS', 'LIMIT', 'OFFSET', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'NOT', 'NULL', 'TRUE', 'FALSE'];
 
     var WORD_OPERATORS = ['AND', 'OR', 'IS', 'LIKE'];
 
@@ -305,6 +311,9 @@ function parser(rest) {
             var node = _parseFunc2.node;
 
             return parser(rest, merge(this.node, _defineProperty({}, key, node)));
+        },
+        just: function just(parseFunc) {
+            return parseFunc(this.rest);
         },
         then: function then(parseFunc) {
             var _parseFunc3 = parseFunc(this.rest);

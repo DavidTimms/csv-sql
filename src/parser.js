@@ -15,45 +15,40 @@ function parseSubQuery(query) {
         .bind('outputColumns', outputColumns)
         .then(keyword('FROM'))
         .bind('primaryTable', tableName)
-        .map(limitClause);
+        .bind('condition', whereClause)
+        .map(parseLimitClause)
+        .map(parseOffsetClause)
 }
 
-function limitClause(context) {
-    const {node, rest: [first, ...rest]} = context;
-    if (isKeyword('LIMIT', first)) {
-        if (rest[0] && rest[0].type === 'number') {
-            return parser(rest.slice(1), merge(node, {limit: rest[0].value}));
-        }
-        else {
-            const found = rest[0] ? rest[0].string : '(end of input)';
-            throw SyntaxError(`Expected a number in limit clause, found "${found}"`);
-        }
-    }
-    else return context;
+function whereClause(tokens) {
+    return parser(tokens, null)
+        .ifNextToken(isKeyword('WHERE'), curr =>
+            curr.then(keyword('WHERE'))
+                .just(expression)
+        );
 }
 
-function keyword(word) {
-    return tokens => {
-        const first = tokens[0];
-        if (isKeyword(word, first)) {
-            return parser(tokens.slice(1), word);
-        }
-        else throw SyntaxError(
-            `Expected "${word}", found "${first.string || '(end of input)'}"`);
-    };
+function parseLimitClause(context) {
+    return context.ifNextToken(isKeyword('LIMIT'), curr =>
+        curr.then(keyword('LIMIT'))
+            .bind('limit', number)
+    );
 }
 
-function isKeyword(word, token) {
-    return token && token.type === 'keyword' && token.string === word;
+function parseOffsetClause(context) {
+    return context.ifNextToken(isKeyword('OFFSET'), curr =>
+        curr.then(keyword('OFFSET'))
+            .bind('offset', number)
+    );
 }
 
 function atom([first, ...rest]) {
     // grouped expression
-    if (isType(first, 'parOpen')) {
+    if (isType('parOpen', first)) {
         return expression(rest).then(parClose);
     }
     // literal TRUE, FALSE, or NULL
-    else if (isType(first, 'keyword')) {
+    else if (isType('keyword', first)) {
         switch (first.string) {
             case 'TRUE':
             case 'FALSE':
@@ -66,7 +61,7 @@ function atom([first, ...rest]) {
         }
     }
     // function call
-    else if (isType(first, 'word') && isType(rest[0], 'parOpen')) {
+    else if (isType('word', first) && isType('parOpen', rest[0])) {
         return parser(rest.slice(1), {type: 'call', functionName: first.string.toUpperCase()})
             .bind('arguments', many(expression, {separator: comma, min: 0}))
             .then(parClose)
@@ -76,7 +71,7 @@ function atom([first, ...rest]) {
             });
     }
     // identifier, number, or string
-    else if (isType(first, ['word', 'number', 'string'])) {
+    else if (isType(['word', 'number', 'string'], first)) {
         return parser(rest, first);
     }
 
@@ -124,16 +119,28 @@ function namedExpression(tokens) {
 }
 
 function outputColumns(tokens) {
-    if (isType(tokens[0], 'star')) {
+    if (isType('star', tokens[0])) {
         return parser(tokens.slice(1), '*');
     }
     return many(namedExpression, {separator: comma})(tokens);
+}
+
+function keyword(word) {
+    return tokens => {
+        const first = tokens[0];
+        if (isKeyword(word, first)) {
+            return parser(tokens.slice(1), word);
+        }
+        else throw SyntaxError(
+            `Expected "${word}", found "${first.string || '(end of input)'}"`);
+    };
 }
 
 const tableName = parseTokenType('string', {expected: 'a table name'});
 const identifier = parseTokenType('word', 'an identifier');
 const operator = parseTokenType('operator', {expected: 'an operator'});
 const comma = parseTokenType('comma');
+const number = parseTokenType('number');
 const parOpen = parseTokenType('parOpen', {expected: 'an opening parenthesis'});
 const parClose = parseTokenType('parClose', {expected: 'a closing parenthesis'});
 
@@ -141,12 +148,27 @@ function parseTokenType(typeName, {expected}={}) {
     expected = expected || 'a ' + typeName;
 
     return ([first, ...rest]) => {
-        if (isType(first, typeName)) {
+        if (isType(typeName, first)) {
             return parser(rest, first.value || first.string);
         }
         const found = first && first.string || '(end of input)';
         throw SyntaxError(`Expected ${expected}, found "${found}"`);
     };
+}
+
+function isKeyword(keyword, token) {
+    if (arguments.length < 2) {
+        return token => isKeyword(keyword, token);
+    }
+    return token && token.type === 'keyword' && token.string === keyword;
+}
+
+function isType(types, token) {
+    if (arguments.length < 2) {
+        return token => isType(types, token);
+    }
+    if (!Array.isArray(types)) types = [types];
+    return token && types.some(type => token.type === type);
 }
 
 function many(parseFunc, {separator, min}={}) {
@@ -175,15 +197,6 @@ function many(parseFunc, {separator, min}={}) {
     };
 };
 
-function isType(node, types=null) {
-    if (types === null) {
-        types = node;
-        return node => isType(node, types);
-    }
-    if (!Array.isArray(types)) types = [types];
-    return node && types.some(type => node.type === type);
-}
-
 var tokenTypes = {
     word: /^[a-z_]\w*/i,
     parOpen: /^\(/,
@@ -198,6 +211,10 @@ var tokenTypes = {
 export function tokenize(query) {
     const tokens = [];
     let rest = query;
+
+    if (!query) {
+        throw Error('No input to tokenize');
+    }
 
     nextToken:
     while (true) {
@@ -223,6 +240,7 @@ export function tokenize(query) {
         'BY',
         'AS',
         'LIMIT',
+        'OFFSET',
         'CASE',
         'WHEN',
         'THEN',
@@ -281,6 +299,9 @@ function parser(rest, node={}) {
         bind(key, parseFunc) {
             const {rest, node} = parseFunc(this.rest);
             return parser(rest, merge(this.node, {[key]: node}));
+        },
+        just(parseFunc) {
+            return parseFunc(this.rest);
         },
         then(parseFunc) {
             const {rest} = parseFunc(this.rest);

@@ -46,7 +46,7 @@ describe('tokenize', () => {
         ]);
     });
 
-    it('should detect string basic literals', () => {
+    it('should detect basic string literals', () => {
         const tokens = tokenize(`"hello there"`);
 
         assert.deepEqual(tokens, [
@@ -144,6 +144,7 @@ describe('parseQuery', () => {
         assert.deepEqual(parseQuery('SELECT * FROM "example.csv"'), {
             outputColumns: '*',
             primaryTable: 'example.csv',
+            condition: null,
         });
     });
     
@@ -176,48 +177,43 @@ describe('parseQuery', () => {
                 },
             ],
             primaryTable: 'people.csv',
+            condition: null,
         });
     });
     
     it('should parse queries with renamed columns', () => {
-        assert.deepEqual(parseQuery('SELECT a AS b FROM "c.csv"'), {
-            outputColumns: [
-                {
-                    type: 'namedExpression',
-                    expression: {
-                        type: 'word',
-                        string: 'a',
-                    },
-                    name: 'b',
+        assert.deepEqual(parseQuery('SELECT a AS b FROM "c.csv"').outputColumns, [
+            {
+                type: 'namedExpression',
+                expression: {
+                    type: 'word',
+                    string: 'a',
                 },
-            ],
-            primaryTable: 'c.csv',
-        });
+                name: 'b',
+            },
+        ]);
     });
     
     it('should parse queries with binary expressions', () => {
-        assert.deepEqual(parseQuery('SELECT a > b FROM "c.csv"'), {
-            outputColumns: [
-                {
-                    type: 'namedExpression',
-                    expression: {
-                        type: 'binaryExpression',
-                        operator: '>',
-                        left: {
-                            type: 'word',
-                            string: 'a',
-                        },
-                        right: {
-                            type: 'word',
-                            string: 'b',
-                        },
-                        string: 'a > b',
+        assert.deepEqual(parseQuery('SELECT a > b FROM "c.csv"').outputColumns, [
+            {
+                type: 'namedExpression',
+                expression: {
+                    type: 'binaryExpression',
+                    operator: '>',
+                    left: {
+                        type: 'word',
+                        string: 'a',
                     },
-                    name: 'a > b',
+                    right: {
+                        type: 'word',
+                        string: 'b',
+                    },
+                    string: 'a > b',
                 },
-            ],
-            primaryTable: 'c.csv',
-        });
+                name: 'a > b',
+            },
+        ]);
     });
     
     it('should allow binary expressions mixed with functions and AS names', () => {
@@ -301,5 +297,35 @@ describe('parseQuery', () => {
                 name: '(a OR b) AND c',
             },
         ]);
+    });
+
+    it('should support correct operator precedence');
+
+    it('should accept a LIMIT clause', () => {
+        const sql = ('SELECT a FROM "b.csv" LIMIT 2');
+        assert.deepEqual(parseQuery(sql).limit, 2);
+    });
+
+    it('should accept an OFFSET clause', () => {
+        const sql = ('SELECT a FROM "b.csv" LIMIT 2 OFFSET 3');
+        assert.deepEqual(parseQuery(sql).offset, 3);
+    });
+
+    it('should accept a WHERE clause', () => {
+        const sql = ('SELECT a FROM "b.csv" WHERE a > 50');
+        assert.deepEqual(parseQuery(sql).condition, {
+            type: 'binaryExpression',
+            operator: '>',
+            left: {
+                type: 'word',
+                string: 'a',
+            },
+            right: {
+                type: 'number',
+                value: 50,
+                string: '50',
+            },
+            string: 'a > 50',
+        });
     });
 });

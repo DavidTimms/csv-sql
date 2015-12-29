@@ -69,4 +69,58 @@ describe('performQuery', () => {
             'David Timms',
         ]);
     });
+
+    it('should support alphabetical ORDER BY', () => {
+        const queryString = 'SELECT name FROM "test/test.csv" ORDER BY name';
+        return queryResultsEqual(queryString, [
+            'name',
+            'Bob Jones',
+            'David Timms',
+            'Jenny Bloggs',
+        ]);
+    });
+
+    it('should support numerical ORDER BY', () => {
+        const queryString = 'SELECT number FROM "test/numbers.csv" ORDER BY number';
+        return queryResultsEqual(queryString, [
+            'number',
+            '',
+            '1',
+            '2.25',
+            '5',
+            '10',
+            '10',
+            '55',
+            '100',
+        ]);
+    });
+
+    it('should support ORDER BY with a direction', () => {
+
+        const ascQueryString = 'SELECT name FROM "test/test.csv" ORDER BY name ASC';
+        return queryResultsEqual(ascQueryString, [
+            'name',
+            'Bob Jones',
+            'David Timms',
+            'Jenny Bloggs',
+        ]);
+
+        const descQueryString = 'SELECT name FROM "test/test.csv" ORDER BY name DESC';
+        return queryResultsEqual(descQueryString, [
+            'name',
+            'Jenny Bloggs',
+            'David Timms',
+            'Bob Jones',
+        ]);
+    });
+
+    it('should support ORDER BY multiple columns', () => {
+        const queryString = 'SELECT name FROM "test/test.csv" ORDER BY gender, age DESC';
+        return queryResultsEqual(queryString, [
+            'name',
+            'Jenny Bloggs',
+            'Bob Jones',
+            'David Timms',
+        ]);
+    });
 });

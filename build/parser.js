@@ -38,18 +38,22 @@ function whereClause(tokens) {
 
 function orderByClause(tokens) {
     return parser(tokens).ifNextToken(isKeyword('ORDER'), function (curr) {
-        return curr.then(keyword('ORDER')).then(keyword('BY')).bind('terms', many(expression, { separator: comma })).bind('direction', function (tokens) {
-            var _tokens = _toArray(tokens);
+        return curr.then(keyword('ORDER')).then(keyword('BY')).just(many(orderingTerm, { separator: comma }));
+    });
+}
 
-            var first = _tokens[0];
+function orderingTerm(tokens) {
+    return parser(tokens).bind('expression', expression).bind('direction', function (tokens) {
+        var _tokens = _toArray(tokens);
 
-            var rest = _tokens.slice(1);
+        var first = _tokens[0];
 
-            if (isKeyword('ASC', first) || isKeyword('DESC', first)) {
-                return parser(rest, first.string.toLowerCase());
-            }
-            return parser(tokens, 'asc');
-        });
+        var rest = _tokens.slice(1);
+
+        if (isKeyword('ASC', first) || isKeyword('DESC', first)) {
+            return parser(rest, first.string.toLowerCase());
+        }
+        return parser(tokens, 'asc');
     });
 }
 

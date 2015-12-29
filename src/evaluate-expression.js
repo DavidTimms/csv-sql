@@ -71,6 +71,6 @@ const functions = {
 
 functions.IFNULL = functions.COALESCE;
 
-function isNull(value) {
+export function isNull(value) {
     return value === null || value === undefined;
 }

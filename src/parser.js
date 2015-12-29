@@ -32,15 +32,20 @@ function orderByClause(tokens) {
         .ifNextToken(isKeyword('ORDER'), curr =>
             curr.then(keyword('ORDER'))
                 .then(keyword('BY'))
-                .bind('terms', many(expression, {separator: comma}))
-                .bind('direction', (tokens) => {
-                    const [first, ...rest] = tokens;
-                    if (isKeyword('ASC', first) || isKeyword('DESC', first)) {
-                        return parser(rest, first.string.toLowerCase());
-                    }
-                    return parser(tokens, 'asc');
-                })
+                .just(many(orderingTerm, {separator: comma}))
         );
+}
+
+function orderingTerm(tokens) {
+    return parser(tokens)
+        .bind('expression', expression)
+        .bind('direction', tokens => {
+            const [first, ...rest] = tokens;
+            if (isKeyword('ASC', first) || isKeyword('DESC', first)) {
+                return parser(rest, first.string.toLowerCase());
+            }
+            return parser(tokens, 'asc');
+        });
 }
 
 function limitClause(tokens) {

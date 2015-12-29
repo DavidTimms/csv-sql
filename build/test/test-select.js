@@ -51,4 +51,28 @@ describe('performQuery', function () {
         var queryString = 'SELECT name FROM "test/test.csv" WHERE (LOWERCASE(gender) = "m") AND age < 27';
         return queryResultsEqual(queryString, ['name', 'David Timms']);
     });
+
+    it('should support alphabetical ORDER BY', function () {
+        var queryString = 'SELECT name FROM "test/test.csv" ORDER BY name';
+        return queryResultsEqual(queryString, ['name', 'Bob Jones', 'David Timms', 'Jenny Bloggs']);
+    });
+
+    it('should support numerical ORDER BY', function () {
+        var queryString = 'SELECT number FROM "test/numbers.csv" ORDER BY number';
+        return queryResultsEqual(queryString, ['number', '', '1', '2.25', '5', '10', '10', '55', '100']);
+    });
+
+    it('should support ORDER BY with a direction', function () {
+
+        var ascQueryString = 'SELECT name FROM "test/test.csv" ORDER BY name ASC';
+        return queryResultsEqual(ascQueryString, ['name', 'Bob Jones', 'David Timms', 'Jenny Bloggs']);
+
+        var descQueryString = 'SELECT name FROM "test/test.csv" ORDER BY name DESC';
+        return queryResultsEqual(descQueryString, ['name', 'Jenny Bloggs', 'David Timms', 'Bob Jones']);
+    });
+
+    it('should support ORDER BY multiple columns', function () {
+        var queryString = 'SELECT name FROM "test/test.csv" ORDER BY gender, age DESC';
+        return queryResultsEqual(queryString, ['name', 'Jenny Bloggs', 'Bob Jones', 'David Timms']);
+    });
 });

@@ -23,6 +23,8 @@ var _select = require('./select');
 
 var _where = require('./where');
 
+var _orderBy = require('./order-by');
+
 var _offset = require('./offset');
 
 var _limit = require('./limit');
@@ -38,12 +40,22 @@ function performQuery(queryString) {
     var primaryTableFileDescriptor = _fs2['default'].openSync(query.primaryTable, 'r');
     var primaryTableReadStream = _fs2['default'].createReadStream(null, { fd: primaryTableFileDescriptor });
 
+    // performLimit will call this function once it has been satisifed,
+    // to avoid processing the rest of the file
     function stopReading() {
         _fs2['default'].closeSync(primaryTableFileDescriptor);
         primaryTableReadStream.destroy();
     }
 
-    return primaryTableReadStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _where.performWhere)(query))).pipe(_csv2['default'].transform((0, _select.performSelect)(query))).pipe(_csv2['default'].transform((0, _offset.performOffset)(query))).pipe(_csv2['default'].transform((0, _limit.performLimit)(query, stopReading))).pipe(_csv2['default'].stringify({ header: true }));
+    var csvStream = primaryTableReadStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _where.performWhere)(query)));
+
+    if (query.orderBy) {
+        csvStream = csvStream.pipe(new _orderBy.OrderingStream(query));
+    }
+
+    csvStream = csvStream.pipe(_csv2['default'].transform((0, _offset.performOffset)(query))).pipe(_csv2['default'].transform((0, _limit.performLimit)(query, stopReading))).pipe(_csv2['default'].transform((0, _select.performSelect)(query))).pipe(_csv2['default'].stringify({ header: true }));
+
+    return csvStream;
 }
 
 if (!module.parent) {

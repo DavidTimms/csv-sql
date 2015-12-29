@@ -219,26 +219,30 @@ describe('parseQuery', function () {
 
     it('should accept a basic ORDER BY clause', function () {
         var sql = 'SELECT * FROM "a.csv" ORDER BY b';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy, {
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy, [{
             direction: 'asc',
-            terms: [{
+            expression: {
                 type: 'word',
-                string: 'b' }] });
+                string: 'b' } }]);
     });
 
     it('should accept an ORDER BY clause with multiple terms', function () {
         var sql = 'SELECT * FROM "a.csv" ORDER BY UPPERCASE(b), c, d = "test"';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy, {
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy, [{
             direction: 'asc',
-            terms: [{
+            expression: {
                 type: 'call',
                 functionName: 'UPPERCASE',
                 arguments: [{
                     type: 'word',
                     string: 'b' }],
-                string: 'UPPERCASE(b)' }, {
+                string: 'UPPERCASE(b)' } }, {
+            direction: 'asc',
+            expression: {
                 type: 'word',
-                string: 'c' }, {
+                string: 'c' } }, {
+            direction: 'asc',
+            expression: {
                 type: 'binaryExpression',
                 operator: '=',
                 left: {
@@ -248,14 +252,17 @@ describe('parseQuery', function () {
                     type: 'string',
                     string: '"test"',
                     value: 'test' },
-                string: 'd = "test"' }] });
+                string: 'd = "test"' } }]);
     });
 
     it('should accept an ORDER BY clause with a direction', function () {
-        var ascSql = 'SELECT * FROM "a.csv" ORDER BY b ASC';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(ascSql).orderBy.direction, 'asc');
+        var sql = 'SELECT * FROM "a.csv" ORDER BY b DESC';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy[0].direction, 'desc');
+    });
 
-        var descSql = 'SELECT * FROM "a.csv" ORDER BY b, c DESC';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(descSql).orderBy.direction, 'desc');
+    it('should accept an ORDER BY clause with mixed directions', function () {
+        var sql = 'SELECT * FROM "a.csv" ORDER BY b DESC, c ASC';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy[0].direction, 'desc');
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy[1].direction, 'asc');
     });
 });

@@ -337,23 +337,23 @@ describe('parseQuery', () => {
 
     it('should accept a basic ORDER BY clause', () => {
         const sql = ('SELECT * FROM "a.csv" ORDER BY b');
-        assert.deepEqual(parseQuery(sql).orderBy, {
-            direction: 'asc',
-            terms: [
-                {
+        assert.deepEqual(parseQuery(sql).orderBy, [
+            {
+                direction: 'asc',
+                expression: {
                     type: 'word',
                     string: 'b',
                 },
-            ],
-        });
+            },
+        ]);
     });
 
     it('should accept an ORDER BY clause with multiple terms', () => {
         const sql = ('SELECT * FROM "a.csv" ORDER BY UPPERCASE(b), c, d = "test"');
-        assert.deepEqual(parseQuery(sql).orderBy, {
-            direction: 'asc',
-            terms: [
-                {
+        assert.deepEqual(parseQuery(sql).orderBy, [
+            {
+                direction: 'asc',
+                expression: {
                     type: 'call',
                     functionName: 'UPPERCASE',
                     arguments: [{
@@ -362,11 +362,17 @@ describe('parseQuery', () => {
                     }],
                     string: 'UPPERCASE(b)',
                 },
-                {
+            },
+            {
+                direction: 'asc',
+                expression: {
                     type: 'word',
                     string: 'c',
                 },
-                {
+            },
+            {
+                direction: 'asc',
+                expression: {
                     type: 'binaryExpression',
                     operator: '=',
                     left: {
@@ -380,15 +386,18 @@ describe('parseQuery', () => {
                     },
                     string: 'd = "test"',
                 },
-            ],
-        });
+            },
+        ]);
     });
 
     it('should accept an ORDER BY clause with a direction', () => {
-        const ascSql = ('SELECT * FROM "a.csv" ORDER BY b ASC');
-        assert.deepEqual(parseQuery(ascSql).orderBy.direction, 'asc');
+        const sql = ('SELECT * FROM "a.csv" ORDER BY b DESC');
+        assert.deepEqual(parseQuery(sql).orderBy[0].direction, 'desc');
+    });
 
-        const descSql = ('SELECT * FROM "a.csv" ORDER BY b, c DESC');
-        assert.deepEqual(parseQuery(descSql).orderBy.direction, 'desc');
+    it('should accept an ORDER BY clause with mixed directions', () => {
+        const sql = ('SELECT * FROM "a.csv" ORDER BY b DESC, c ASC');
+        assert.deepEqual(parseQuery(sql).orderBy[0].direction, 'desc');
+        assert.deepEqual(parseQuery(sql).orderBy[1].direction, 'asc');
     });
 });

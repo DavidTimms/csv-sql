@@ -2,11 +2,11 @@ import fs from 'fs';
 
 import csv from 'csv';
 
-import {parseQuery} from './parser.js';
-import {performSelect} from './select.js';
-import {performWhere} from './where.js';
-import {performOffset} from './offset.js';
-import {performLimit} from './limit.js';
+import {parseQuery} from './parser';
+import {performSelect} from './select';
+import {performWhere} from './where';
+import {performOffset} from './offset';
+import {performLimit} from './limit';
 
 export function performQuery(queryString) {
     const query = parseQuery(queryString);

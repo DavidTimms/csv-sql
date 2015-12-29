@@ -6,8 +6,13 @@ Object.defineProperty(exports, "__esModule", {
 exports.performOffset = performOffset;
 
 function performOffset(_ref) {
-    var _ref$offset = _ref.offset;
-    var offset = _ref$offset === undefined ? 0 : _ref$offset;
+    var offset = _ref.offset;
+
+    if (offset === null || offset === undefined) {
+        return function (row) {
+            return row;
+        };
+    }
 
     var rowCount = 0;
     return function (row) {

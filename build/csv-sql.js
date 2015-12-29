@@ -17,18 +17,18 @@ var _csv = require('csv');
 
 var _csv2 = _interopRequireDefault(_csv);
 
-var _parserJs = require('./parser.js');
+var _parser = require('./parser');
 
-var _selectJs = require('./select.js');
+var _select = require('./select');
 
-var _whereJs = require('./where.js');
+var _where = require('./where');
 
-var _offsetJs = require('./offset.js');
+var _offset = require('./offset');
 
-var _limitJs = require('./limit.js');
+var _limit = require('./limit');
 
 function performQuery(queryString) {
-    var query = (0, _parserJs.parseQuery)(queryString);
+    var query = (0, _parser.parseQuery)(queryString);
     //console.log(JSON.stringify(query, null, 4));
 
     if (!_fs2['default'].existsSync(query.primaryTable)) {
@@ -43,7 +43,7 @@ function performQuery(queryString) {
         primaryTableReadStream.destroy();
     }
 
-    return primaryTableReadStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _whereJs.performWhere)(query))).pipe(_csv2['default'].transform((0, _selectJs.performSelect)(query))).pipe(_csv2['default'].transform((0, _offsetJs.performOffset)(query))).pipe(_csv2['default'].transform((0, _limitJs.performLimit)(query, stopReading))).pipe(_csv2['default'].stringify({ header: true }));
+    return primaryTableReadStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _where.performWhere)(query))).pipe(_csv2['default'].transform((0, _select.performSelect)(query))).pipe(_csv2['default'].transform((0, _offset.performOffset)(query))).pipe(_csv2['default'].transform((0, _limit.performLimit)(query, stopReading))).pipe(_csv2['default'].stringify({ header: true }));
 }
 
 if (!module.parent) {

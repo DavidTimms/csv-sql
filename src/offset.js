@@ -1,5 +1,9 @@
 
-export function performOffset({offset = 0}) {
+export function performOffset({offset}) {
+    if (offset === null || offset === undefined) {
+        return row => row;
+    }
+    
     let rowCount = 0;
     return row => {
         rowCount += 1;

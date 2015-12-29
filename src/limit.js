@@ -1,5 +1,9 @@
 
-export function performLimit({limit = Infinity}, stopReading) {
+export function performLimit({limit}, stopReading) {
+    if (limit === null || limit === undefined) {
+        return row => row;
+    }
+    
     let rowCount = 0;
     let stopped = false;
     return row => {

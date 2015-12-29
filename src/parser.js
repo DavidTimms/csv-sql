@@ -16,29 +16,42 @@ function parseSubQuery(query) {
         .then(keyword('FROM'))
         .bind('primaryTable', tableName)
         .bind('condition', whereClause)
-        .map(parseLimitClause)
-        .map(parseOffsetClause)
+        .bind('orderBy', orderByClause)
+        .bind('limit', limitClause)
+        .bind('offset', offsetClause);
 }
 
 function whereClause(tokens) {
-    return parser(tokens, null)
-        .ifNextToken(isKeyword('WHERE'), curr =>
-            curr.then(keyword('WHERE'))
-                .just(expression)
-        );
-}
-
-function parseLimitClause(context) {
-    return context.ifNextToken(isKeyword('LIMIT'), curr =>
-        curr.then(keyword('LIMIT'))
-            .bind('limit', number)
+    return parser(tokens).ifNextToken(isKeyword('WHERE'), curr =>
+        curr.then(keyword('WHERE')).just(expression)
     );
 }
 
-function parseOffsetClause(context) {
-    return context.ifNextToken(isKeyword('OFFSET'), curr =>
-        curr.then(keyword('OFFSET'))
-            .bind('offset', number)
+function orderByClause(tokens) {
+    return parser(tokens)
+        .ifNextToken(isKeyword('ORDER'), curr =>
+            curr.then(keyword('ORDER'))
+                .then(keyword('BY'))
+                .bind('terms', many(expression, {separator: comma}))
+                .bind('direction', (tokens) => {
+                    const [first, ...rest] = tokens;
+                    if (isKeyword('ASC', first) || isKeyword('DESC', first)) {
+                        return parser(rest, first.string.toLowerCase());
+                    }
+                    return parser(tokens, 'asc');
+                })
+        );
+}
+
+function limitClause(tokens) {
+    return parser(tokens).ifNextToken(isKeyword('LIMIT'), curr =>
+        curr.then(keyword('LIMIT')).just(number)
+    );
+}
+
+function offsetClause(tokens) {
+    return parser(tokens).ifNextToken(isKeyword('OFFSET'), curr =>
+        curr.then(keyword('OFFSET')).just(number)
     );
 }
 
@@ -239,6 +252,9 @@ export function tokenize(query) {
         'GROUP',
         'BY',
         'AS',
+        'ORDER',
+        'ASC',
+        'DESC',
         'LIMIT',
         'OFFSET',
         'CASE',
@@ -292,7 +308,7 @@ function printRest(parser) {
     return parser;
 }
 
-function parser(rest, node={}) {
+function parser(rest, node=null) {
     return {
         rest,
         node,
@@ -329,11 +345,15 @@ function parser(rest, node={}) {
 
 function merge(a, b) {
     const merged = {};
-    for (let key in a) if (a.hasOwnProperty(key)) {
+    if (a) for (let key in a) if (a.hasOwnProperty(key)) {
         merged[key] = a[key];
     }
-    for (let key in b) if (b.hasOwnProperty(key)) {
+    if (b) for (let key in b) if (b.hasOwnProperty(key)) {
         merged[key] = b[key];
     }
     return merged;
+}
+
+function or(predicates) {
+    return (...args) => predicates.some(predicate => predicate(...args));
 }

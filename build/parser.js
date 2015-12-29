@@ -27,24 +27,41 @@ function parseQuery(query) {
 
 function parseSubQuery(query) {
     var tokens = tokenize(query);
-    return parser(tokens).then(keyword('SELECT')).bind('outputColumns', outputColumns).then(keyword('FROM')).bind('primaryTable', tableName).bind('condition', whereClause).map(parseLimitClause).map(parseOffsetClause);
+    return parser(tokens).then(keyword('SELECT')).bind('outputColumns', outputColumns).then(keyword('FROM')).bind('primaryTable', tableName).bind('condition', whereClause).bind('orderBy', orderByClause).bind('limit', limitClause).bind('offset', offsetClause);
 }
 
 function whereClause(tokens) {
-    return parser(tokens, null).ifNextToken(isKeyword('WHERE'), function (curr) {
+    return parser(tokens).ifNextToken(isKeyword('WHERE'), function (curr) {
         return curr.then(keyword('WHERE')).just(expression);
     });
 }
 
-function parseLimitClause(context) {
-    return context.ifNextToken(isKeyword('LIMIT'), function (curr) {
-        return curr.then(keyword('LIMIT')).bind('limit', number);
+function orderByClause(tokens) {
+    return parser(tokens).ifNextToken(isKeyword('ORDER'), function (curr) {
+        return curr.then(keyword('ORDER')).then(keyword('BY')).bind('terms', many(expression, { separator: comma })).bind('direction', function (tokens) {
+            var _tokens = _toArray(tokens);
+
+            var first = _tokens[0];
+
+            var rest = _tokens.slice(1);
+
+            if (isKeyword('ASC', first) || isKeyword('DESC', first)) {
+                return parser(rest, first.string.toLowerCase());
+            }
+            return parser(tokens, 'asc');
+        });
     });
 }
 
-function parseOffsetClause(context) {
-    return context.ifNextToken(isKeyword('OFFSET'), function (curr) {
-        return curr.then(keyword('OFFSET')).bind('offset', number);
+function limitClause(tokens) {
+    return parser(tokens).ifNextToken(isKeyword('LIMIT'), function (curr) {
+        return curr.then(keyword('LIMIT')).just(number);
+    });
+}
+
+function offsetClause(tokens) {
+    return parser(tokens).ifNextToken(isKeyword('OFFSET'), function (curr) {
+        return curr.then(keyword('OFFSET')).just(number);
     });
 }
 
@@ -262,7 +279,7 @@ function tokenize(query) {
         throw Error('unable to tokenize: ' + JSON.stringify(rest));
     }
 
-    var KEYWORDS = ['SELECT', 'FROM', 'WHERE', 'GROUP', 'BY', 'AS', 'LIMIT', 'OFFSET', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+    var KEYWORDS = ['SELECT', 'FROM', 'WHERE', 'GROUP', 'BY', 'AS', 'ORDER', 'ASC', 'DESC', 'LIMIT', 'OFFSET', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'NOT', 'NULL', 'TRUE', 'FALSE'];
 
     var WORD_OPERATORS = ['AND', 'OR', 'IS', 'LIKE'];
 
@@ -299,7 +316,7 @@ function printRest(parser) {
 }
 
 function parser(rest) {
-    var node = arguments[1] === undefined ? {} : arguments[1];
+    var node = arguments[1] === undefined ? null : arguments[1];
 
     return {
         rest: rest,
@@ -341,13 +358,25 @@ function parser(rest) {
 
 function merge(a, b) {
     var merged = {};
-    for (var key in a) {
+    if (a) for (var key in a) {
         if (a.hasOwnProperty(key)) {
             merged[key] = a[key];
         }
-    }for (var key in b) {
+    }if (b) for (var key in b) {
         if (b.hasOwnProperty(key)) {
             merged[key] = b[key];
         }
     }return merged;
+}
+
+function or(predicates) {
+    return function () {
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+        }
+
+        return predicates.some(function (predicate) {
+            return predicate.apply(undefined, args);
+        });
+    };
 }

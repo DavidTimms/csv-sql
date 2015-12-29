@@ -6,8 +6,13 @@ Object.defineProperty(exports, "__esModule", {
 exports.performLimit = performLimit;
 
 function performLimit(_ref, stopReading) {
-    var _ref$limit = _ref.limit;
-    var limit = _ref$limit === undefined ? Infinity : _ref$limit;
+    var limit = _ref.limit;
+
+    if (limit === null || limit === undefined) {
+        return function (row) {
+            return row;
+        };
+    }
 
     var rowCount = 0;
     var stopped = false;

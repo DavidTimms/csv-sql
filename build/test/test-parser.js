@@ -71,7 +71,10 @@ describe('parseQuery', function () {
         _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT * FROM "example.csv"'), {
             outputColumns: '*',
             primaryTable: 'example.csv',
-            condition: null });
+            condition: null,
+            orderBy: null,
+            limit: null,
+            offset: null });
     });
 
     it('should parse queries with an output column list', function () {
@@ -93,7 +96,10 @@ describe('parseQuery', function () {
                     string: 'gender' },
                 name: 'gender' }],
             primaryTable: 'people.csv',
-            condition: null });
+            condition: null,
+            orderBy: null,
+            limit: null,
+            offset: null });
     });
 
     it('should parse queries with renamed columns', function () {
@@ -209,5 +215,47 @@ describe('parseQuery', function () {
                 value: 50,
                 string: '50' },
             string: 'a > 50' });
+    });
+
+    it('should accept a basic ORDER BY clause', function () {
+        var sql = 'SELECT * FROM "a.csv" ORDER BY b';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy, {
+            direction: 'asc',
+            terms: [{
+                type: 'word',
+                string: 'b' }] });
+    });
+
+    it('should accept an ORDER BY clause with multiple terms', function () {
+        var sql = 'SELECT * FROM "a.csv" ORDER BY UPPERCASE(b), c, d = "test"';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy, {
+            direction: 'asc',
+            terms: [{
+                type: 'call',
+                functionName: 'UPPERCASE',
+                arguments: [{
+                    type: 'word',
+                    string: 'b' }],
+                string: 'UPPERCASE(b)' }, {
+                type: 'word',
+                string: 'c' }, {
+                type: 'binaryExpression',
+                operator: '=',
+                left: {
+                    type: 'word',
+                    string: 'd' },
+                right: {
+                    type: 'string',
+                    string: '"test"',
+                    value: 'test' },
+                string: 'd = "test"' }] });
+    });
+
+    it('should accept an ORDER BY clause with a direction', function () {
+        var ascSql = 'SELECT * FROM "a.csv" ORDER BY b ASC';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(ascSql).orderBy.direction, 'asc');
+
+        var descSql = 'SELECT * FROM "a.csv" ORDER BY b, c DESC';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(descSql).orderBy.direction, 'desc');
     });
 });

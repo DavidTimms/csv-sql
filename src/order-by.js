@@ -3,8 +3,6 @@ import {evaluateExpression, isNull} from './evaluate-expression';
 import stream from 'stream';
 
 const [LESS, SAME, GREATER] = [-1, 0, 1];
-const LOCALE = 'en-GB';
-const COMPARE_OPTIONS = {numeric: true};
 
 export class OrderingStream extends stream.Transform {
     constructor({orderBy, limit}) {
@@ -60,5 +58,17 @@ function compare(a, b) {
 
     if (isNull(b)) return GREATER;
 
-    return String(a).localeCompare(b, LOCALE, COMPARE_OPTIONS);
+    // if both values can be coerced to numbers, do so
+    const numA = +a;
+    if (!Number.isNaN(numA)) {
+        const numB = +b;
+        if (!Number.isNaN(numB)) {
+            a = numA;
+            b = numB;
+        }
+    }
+
+    return a > b ? GREATER :
+           a < b ? LESS :
+           SAME;
 }

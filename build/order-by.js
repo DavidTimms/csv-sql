@@ -24,9 +24,6 @@ var LESS = -1;
 var SAME = 0;
 var GREATER = 1;
 
-var LOCALE = 'en-GB';
-var COMPARE_OPTIONS = { numeric: true };
-
 var OrderingStream = (function (_stream$Transform) {
     function OrderingStream(_ref) {
         var orderBy = _ref.orderBy;
@@ -92,5 +89,15 @@ function compare(a, b) {
 
     if ((0, _evaluateExpression.isNull)(b)) return GREATER;
 
-    return String(a).localeCompare(b, LOCALE, COMPARE_OPTIONS);
+    // if both values can be coerced to numbers, do so
+    var numA = +a;
+    if (!Number.isNaN(numA)) {
+        var numB = +b;
+        if (!Number.isNaN(numB)) {
+            a = numA;
+            b = numB;
+        }
+    }
+
+    return a > b ? GREATER : a < b ? LESS : SAME;
 }

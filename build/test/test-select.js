@@ -59,7 +59,7 @@ describe('performQuery', function () {
 
     it('should support numerical ORDER BY', function () {
         var queryString = 'SELECT number FROM "test/numbers.csv" ORDER BY number';
-        return queryResultsEqual(queryString, ['number', '', '1', '2.25', '5', '10', '10', '55', '100']);
+        return queryResultsEqual(queryString, ['number', '', '1', '2.25', '2.5', '5', '10', '10', '55', '100']);
     });
 
     it('should support ORDER BY with a direction', function () {

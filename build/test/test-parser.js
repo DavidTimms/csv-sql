@@ -17,6 +17,8 @@ describe('tokenize', function () {
         _chai.assert.deepEqual(tokens, [{ type: 'word', string: 'SELECTED' }, { type: 'word', string: 'hello' }, { type: 'word', string: 'Dog' }, { type: 'word', string: 'a' }, { type: 'word', string: '_underscored' }, { type: 'word', string: 'multi_word_thing' }]);
     });
 
+    it('should detect identifiers with spaces using backticks');
+
     it('should detect numbers', function () {
         var tokens = (0, _parser.tokenize)('  3 56.3 3.141592 9832 293829047240 ');
 

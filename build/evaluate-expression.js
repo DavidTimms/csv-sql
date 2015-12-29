@@ -81,5 +81,5 @@ var functions = {
 functions.IFNULL = functions.COALESCE;
 
 function isNull(value) {
-    return value === null || value === undefined;
+    return value === null || value === undefined || value === '';
 }

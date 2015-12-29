@@ -250,6 +250,8 @@ function many(parseFunc) {
     };
 };
 
+// TODO rename 'word' to identifier
+
 var tokenTypes = {
     word: /^[a-z_]\w*/i,
     parOpen: /^\(/,

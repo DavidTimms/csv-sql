@@ -72,5 +72,5 @@ const functions = {
 functions.IFNULL = functions.COALESCE;
 
 export function isNull(value) {
-    return value === null || value === undefined;
+    return value === null || value === undefined || value === '';
 }

@@ -1,10 +1,8 @@
 
 import {assert} from 'chai';
-import {
-    parseQuery,
-    parseSubQuery,
-    tokenize,
-} from '../parser';
+import {tokenize} from '../tokenizer';
+import {parseQuery, parseSubQuery} from '../parser';
+
 
 describe('tokenize', () => {
     it('should detect keywords', () => {
@@ -56,12 +54,23 @@ describe('tokenize', () => {
         ]);
     });
 
-    it('should detect escaped string literals'); (() => {
-        const tokens = tokenize(`'how\'s "it" going?'  "great!\\\\" `);
+    it('should detect escaped string literals', () => {
+        const tokens = tokenize(`'how\\'s "it" going?'  "great!\\\\" `);
 
         assert.deepEqual(tokens, [
-            {type: 'string', string: '\'how\\\'s "it" going?\'', value: 'how\'s it going?'},
+            {type: 'string', string: '"how\'s \\"it\\" going?"', value: 'how\'s "it" going?'},
             {type: 'string', string: '"great!\\\\"', value: 'great!\\'},
+        ]);
+    });
+
+    it('should detect tokens around strings', () => {
+        const tokens = tokenize(`="foo",'bar'`);
+
+        assert.deepEqual(tokens, [
+            {type: 'operator', string: '='},
+            {type: 'string', string: '"foo"', value: 'foo'},
+            {type: 'comma', string: ','},
+            {type: 'string', string: '"bar"', value: 'bar'},
         ]);
     });
 

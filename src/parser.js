@@ -1,3 +1,4 @@
+import {tokenize} from './tokenizer';
 
 export function parseQuery(query) {
     const {node, rest} = parseSubQuery(query).ifNextToken(isType('semicolon'), curr => 
@@ -13,6 +14,7 @@ export function parseQuery(query) {
 
 function parseSubQuery(query) {
     const tokens = tokenize(query);
+
     return parser(tokens)
         .then(keyword('SELECT'))
         .bind('outputColumns', outputColumns)
@@ -218,98 +220,6 @@ function many(parseFunc, {separator, min}={}) {
         return parser(rest, parts);
     };
 };
-
-// TODO rename 'word' to identifier
-
-var tokenTypes = {
-    word: /^[a-z_]\w*/i,
-    parOpen: /^\(/,
-    parClose: /^\)/,
-    star: /^\*/,
-    number: /^\d+(\.\d+)?/,
-    operator: /^(=|<=|>=|!=|<>|<|>)/,
-    string: /^"[^"]*"/,
-    comma: /^,/,
-    semicolon: /^;/,
-};
-
-export function tokenize(query) {
-    const tokens = [];
-    let rest = query;
-
-    if (!query) {
-        throw Error('No input to tokenize');
-    }
-
-    nextToken:
-    while (true) {
-        rest = rest.match(/^\s*([\s\S]*)$/)[1];
-        if (rest.length === 0) break;
-
-        for (let tokenType in tokenTypes) {
-            const match = rest.match(tokenTypes[tokenType]);
-            if (match) {
-                tokens.push({type: tokenType, string: match[0]});
-                rest = rest.slice(match[0].length);
-                continue nextToken;
-            }
-        }
-        throw Error("unable to tokenize: " + JSON.stringify(rest));
-    }
-
-    const KEYWORDS = [
-        'SELECT',
-        'FROM',
-        'WHERE',
-        'GROUP',
-        'BY',
-        'AS',
-        'ORDER',
-        'ASC',
-        'DESC',
-        'LIMIT',
-        'OFFSET',
-        'CASE',
-        'WHEN',
-        'THEN',
-        'ELSE',
-        'END',
-        'NOT',
-        'NULL',
-        'TRUE',
-        'FALSE',
-    ];
-
-    const WORD_OPERATORS = [
-        'AND',
-        'OR',
-        'IS',
-        'LIKE',
-    ];
-
-    const keywordRegex = new RegExp(`^(${ KEYWORDS.join('|') })$`, 'i');
-    const operatorRegex = new RegExp(`^(${ WORD_OPERATORS.join('|') })$`, 'i');
-
-    return tokens.map(token => {
-        if (token.type === 'word') {
-            if (keywordRegex.test(token.string)) {
-                token.type = 'keyword';
-                token.string = token.string.toUpperCase();
-            }
-            else if (operatorRegex.test(token.string)) {
-                token.type = 'operator';
-                token.string = token.string.toUpperCase();
-            }
-        }
-        else if (token.type === 'number') {
-            token.value = Number(token.string);
-        }
-        else if (token.type === 'string') {
-            token.value = JSON.parse(token.string);
-        }
-        return token;
-    });
-}
 
 function throwUnexpected(token) {
     throw SyntaxError(`Unexpected token: "${token.string}"`);

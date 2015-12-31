@@ -4,11 +4,12 @@ Object.defineProperty(exports, '__esModule', {
     value: true
 });
 exports.parseQuery = parseQuery;
-exports.tokenize = tokenize;
 
 function _toArray(arr) { return Array.isArray(arr) ? arr : Array.from(arr); }
 
 function _defineProperty(obj, key, value) { return Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); }
+
+var _tokenizer = require('./tokenizer');
 
 function parseQuery(query) {
     var _parseSubQuery$ifNextToken = parseSubQuery(query).ifNextToken(isType('semicolon'), function (curr) {
@@ -28,7 +29,8 @@ function parseQuery(query) {
 }
 
 function parseSubQuery(query) {
-    var tokens = tokenize(query);
+    var tokens = (0, _tokenizer.tokenize)(query);
+
     return parser(tokens).then(keyword('SELECT')).bind('outputColumns', outputColumns).then(keyword('FROM')).bind('primaryTable', tableName).bind('condition', whereClause).bind('orderBy', orderByClause).bind('limit', limitClause).bind('offset', offsetClause);
 }
 
@@ -252,67 +254,6 @@ function many(parseFunc) {
         return parser(rest, parts);
     };
 };
-
-// TODO rename 'word' to identifier
-
-var tokenTypes = {
-    word: /^[a-z_]\w*/i,
-    parOpen: /^\(/,
-    parClose: /^\)/,
-    star: /^\*/,
-    number: /^\d+(\.\d+)?/,
-    operator: /^(=|<=|>=|!=|<>|<|>)/,
-    string: /^"[^"]*"/,
-    comma: /^,/,
-    semicolon: /^;/ };
-
-function tokenize(query) {
-    var tokens = [];
-    var rest = query;
-
-    if (!query) {
-        throw Error('No input to tokenize');
-    }
-
-    nextToken: while (true) {
-        rest = rest.match(/^\s*([\s\S]*)$/)[1];
-        if (rest.length === 0) break;
-
-        for (var tokenType in tokenTypes) {
-            var match = rest.match(tokenTypes[tokenType]);
-            if (match) {
-                tokens.push({ type: tokenType, string: match[0] });
-                rest = rest.slice(match[0].length);
-                continue nextToken;
-            }
-        }
-        throw Error('unable to tokenize: ' + JSON.stringify(rest));
-    }
-
-    var KEYWORDS = ['SELECT', 'FROM', 'WHERE', 'GROUP', 'BY', 'AS', 'ORDER', 'ASC', 'DESC', 'LIMIT', 'OFFSET', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'NOT', 'NULL', 'TRUE', 'FALSE'];
-
-    var WORD_OPERATORS = ['AND', 'OR', 'IS', 'LIKE'];
-
-    var keywordRegex = new RegExp('^(' + KEYWORDS.join('|') + ')$', 'i');
-    var operatorRegex = new RegExp('^(' + WORD_OPERATORS.join('|') + ')$', 'i');
-
-    return tokens.map(function (token) {
-        if (token.type === 'word') {
-            if (keywordRegex.test(token.string)) {
-                token.type = 'keyword';
-                token.string = token.string.toUpperCase();
-            } else if (operatorRegex.test(token.string)) {
-                token.type = 'operator';
-                token.string = token.string.toUpperCase();
-            }
-        } else if (token.type === 'number') {
-            token.value = Number(token.string);
-        } else if (token.type === 'string') {
-            token.value = JSON.parse(token.string);
-        }
-        return token;
-    });
-}
 
 function throwUnexpected(token) {
     throw SyntaxError('Unexpected token: "' + token.string + '"');

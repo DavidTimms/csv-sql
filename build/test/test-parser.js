@@ -2,17 +2,19 @@
 
 var _chai = require('chai');
 
+var _tokenizer = require('../tokenizer');
+
 var _parser = require('../parser');
 
 describe('tokenize', function () {
     it('should detect keywords', function () {
-        var tokens = (0, _parser.tokenize)('SELECT from    where group   by aS LIMit');
+        var tokens = (0, _tokenizer.tokenize)('SELECT from    where group   by aS LIMit');
 
         _chai.assert.deepEqual(tokens, [{ type: 'keyword', string: 'SELECT' }, { type: 'keyword', string: 'FROM' }, { type: 'keyword', string: 'WHERE' }, { type: 'keyword', string: 'GROUP' }, { type: 'keyword', string: 'BY' }, { type: 'keyword', string: 'AS' }, { type: 'keyword', string: 'LIMIT' }]);
     });
 
     it('should detect identifiers', function () {
-        var tokens = (0, _parser.tokenize)('SELECTED hello Dog a _underscored\nmulti_word_thing');
+        var tokens = (0, _tokenizer.tokenize)('SELECTED hello Dog a _underscored\nmulti_word_thing');
 
         _chai.assert.deepEqual(tokens, [{ type: 'word', string: 'SELECTED' }, { type: 'word', string: 'hello' }, { type: 'word', string: 'Dog' }, { type: 'word', string: 'a' }, { type: 'word', string: '_underscored' }, { type: 'word', string: 'multi_word_thing' }]);
     });
@@ -20,49 +22,55 @@ describe('tokenize', function () {
     it('should detect identifiers with spaces using backticks');
 
     it('should detect numbers', function () {
-        var tokens = (0, _parser.tokenize)('  3 56.3 3.141592 9832 293829047240 ');
+        var tokens = (0, _tokenizer.tokenize)('  3 56.3 3.141592 9832 293829047240 ');
 
         _chai.assert.deepEqual(tokens, [{ type: 'number', string: '3', value: 3 }, { type: 'number', string: '56.3', value: 56.3 }, { type: 'number', string: '3.141592', value: 3.141592 }, { type: 'number', string: '9832', value: 9832 }, { type: 'number', string: '293829047240', value: 293829047240 }]);
     });
 
     it('should detect basic string literals', function () {
-        var tokens = (0, _parser.tokenize)('"hello there"');
+        var tokens = (0, _tokenizer.tokenize)('"hello there"');
 
         _chai.assert.deepEqual(tokens, [{ type: 'string', string: '"hello there"', value: 'hello there' }]);
     });
 
-    it('should detect escaped string literals');(function () {
-        var tokens = (0, _parser.tokenize)('\'how\'s "it" going?\'  "great!\\\\" ');
+    it('should detect escaped string literals', function () {
+        var tokens = (0, _tokenizer.tokenize)('\'how\\\'s "it" going?\'  "great!\\\\" ');
 
-        _chai.assert.deepEqual(tokens, [{ type: 'string', string: '\'how\\\'s "it" going?\'', value: 'how\'s it going?' }, { type: 'string', string: '"great!\\\\"', value: 'great!\\' }]);
+        _chai.assert.deepEqual(tokens, [{ type: 'string', string: '"how\'s \\"it\\" going?"', value: 'how\'s "it" going?' }, { type: 'string', string: '"great!\\\\"', value: 'great!\\' }]);
+    });
+
+    it('should detect tokens around strings', function () {
+        var tokens = (0, _tokenizer.tokenize)('="foo",\'bar\'');
+
+        _chai.assert.deepEqual(tokens, [{ type: 'operator', string: '=' }, { type: 'string', string: '"foo"', value: 'foo' }, { type: 'comma', string: ',' }, { type: 'string', string: '"bar"', value: 'bar' }]);
     });
 
     it('should detect parenthesis', function () {
-        var tokens = (0, _parser.tokenize)('() (((     ))');
+        var tokens = (0, _tokenizer.tokenize)('() (((     ))');
 
         _chai.assert.deepEqual(tokens, [{ type: 'parOpen', string: '(' }, { type: 'parClose', string: ')' }, { type: 'parOpen', string: '(' }, { type: 'parOpen', string: '(' }, { type: 'parOpen', string: '(' }, { type: 'parClose', string: ')' }, { type: 'parClose', string: ')' }]);
     });
 
     it('should detect stars', function () {
-        var tokens = (0, _parser.tokenize)('* (*) **');
+        var tokens = (0, _tokenizer.tokenize)('* (*) **');
 
         _chai.assert.deepEqual(tokens, [{ type: 'star', string: '*' }, { type: 'parOpen', string: '(' }, { type: 'star', string: '*' }, { type: 'parClose', string: ')' }, { type: 'star', string: '*' }, { type: 'star', string: '*' }]);
     });
 
     it('should detect commas', function () {
-        var tokens = (0, _parser.tokenize)(', so, many,,, commas,');
+        var tokens = (0, _tokenizer.tokenize)(', so, many,,, commas,');
 
         _chai.assert.deepEqual(tokens, [{ type: 'comma', string: ',' }, { type: 'word', string: 'so' }, { type: 'comma', string: ',' }, { type: 'word', string: 'many' }, { type: 'comma', string: ',' }, { type: 'comma', string: ',' }, { type: 'comma', string: ',' }, { type: 'word', string: 'commas' }, { type: 'comma', string: ',' }]);
     });
 
     it('should detect commas', function () {
-        var tokens = (0, _parser.tokenize)(', so, many,,, commas,');
+        var tokens = (0, _tokenizer.tokenize)(', so, many,,, commas,');
 
         _chai.assert.deepEqual(tokens, [{ type: 'comma', string: ',' }, { type: 'word', string: 'so' }, { type: 'comma', string: ',' }, { type: 'word', string: 'many' }, { type: 'comma', string: ',' }, { type: 'comma', string: ',' }, { type: 'comma', string: ',' }, { type: 'word', string: 'commas' }, { type: 'comma', string: ',' }]);
     });
 
     it('should detect operators', function () {
-        var tokens = (0, _parser.tokenize)('== <= >=!=<> < >');
+        var tokens = (0, _tokenizer.tokenize)('== <= >=!=<> < >');
 
         _chai.assert.deepEqual(tokens, [{ type: 'operator', string: '=' }, { type: 'operator', string: '=' }, { type: 'operator', string: '<=' }, { type: 'operator', string: '>=' }, { type: 'operator', string: '!=' }, { type: 'operator', string: '<>' }, { type: 'operator', string: '<' }, { type: 'operator', string: '>' }]);
     });

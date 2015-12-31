@@ -11,10 +11,12 @@ function _toArray(arr) { return Array.isArray(arr) ? arr : Array.from(arr); }
 function _defineProperty(obj, key, value) { return Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); }
 
 function parseQuery(query) {
-    var _parseSubQuery = parseSubQuery(query);
+    var _parseSubQuery$ifNextToken = parseSubQuery(query).ifNextToken(isType('semicolon'), function (curr) {
+        return curr.then(semicolon);
+    });
 
-    var node = _parseSubQuery.node;
-    var rest = _parseSubQuery.rest;
+    var node = _parseSubQuery$ifNextToken.node;
+    var rest = _parseSubQuery$ifNextToken.rest;
 
     if (rest.length > 0) {
         var restString = rest.map(function (token) {
@@ -166,6 +168,7 @@ var identifier = parseTokenType('word', 'an identifier');
 var operator = parseTokenType('operator', { expected: 'an operator' });
 var comma = parseTokenType('comma');
 var number = parseTokenType('number');
+var semicolon = parseTokenType('semicolon');
 var parOpen = parseTokenType('parOpen', { expected: 'an opening parenthesis' });
 var parClose = parseTokenType('parClose', { expected: 'a closing parenthesis' });
 
@@ -260,7 +263,8 @@ var tokenTypes = {
     number: /^\d+(\.\d+)?/,
     operator: /^(=|<=|>=|!=|<>|<|>)/,
     string: /^"[^"]*"/,
-    comma: /^,/ };
+    comma: /^,/,
+    semicolon: /^;/ };
 
 function tokenize(query) {
     var tokens = [];

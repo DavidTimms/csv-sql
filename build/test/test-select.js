@@ -5,7 +5,7 @@ var _chai = require('chai');
 var _csvSql = require('../csv-sql');
 
 function queryResults(queryString, callback) {
-    var stream = (0, _csvSql.performQuery)(queryString);
+    var stream = (0, _csvSql.performQuery)(queryString).pipe((0, _csvSql.toCSV)());
     var results = [];
 
     stream.on('data', function (data) {

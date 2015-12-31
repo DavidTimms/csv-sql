@@ -30,24 +30,54 @@ export function performQuery(queryString) {
         primaryTableReadStream.destroy();
     }
 
-    let csvStream = primaryTableReadStream
+    let resultStream = primaryTableReadStream
         .pipe(csv.parse({columns: true}))
         .pipe(csv.transform(performWhere(query)))
 
     if (query.orderBy) {
-        csvStream = csvStream.pipe(new OrderingStream(query))
+        resultStream = resultStream.pipe(new OrderingStream(query))
     }
 
-    csvStream = csvStream
+    resultStream = resultStream
         .pipe(csv.transform(performOffset(query)))
         .pipe(csv.transform(performLimit(query, stopReading)))
         .pipe(csv.transform(performSelect(query)))
-        .pipe(csv.stringify({header: true}));
 
-    return csvStream;
+    return resultStream;
+}
+
+export function toCSV() {
+    return csv.stringify({header: true});
+}
+
+function startRepl() {
+    const repl = require('repl');
+
+    repl.start({
+        eval: function _eval(queryString, context, filename, callback) {
+            const resultStream = performQuery(queryString);
+
+            resultStream
+                .pipe(toCSV())
+                .pipe(process.stdout);
+
+            resultStream.on('end', () => {
+                callback(null, undefined);
+            });
+        },
+        ignoreUndefined: true,
+    });
 }
 
 
 if (!module.parent) {
-    performQuery(...process.argv.slice(2)).pipe(process.stdout);
+    if (process.argv.length > 2) {
+        performQuery(...process.argv.slice(2))
+            .pipe(toCSV())
+            .pipe(process.stdout);
+    }
+    else {
+        // Start a REPL if no arguments have been provided
+        startRepl();
+    }
 }

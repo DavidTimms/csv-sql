@@ -4,6 +4,7 @@ Object.defineProperty(exports, '__esModule', {
     value: true
 });
 exports.performQuery = performQuery;
+exports.toCSV = toCSV;
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
@@ -47,17 +48,42 @@ function performQuery(queryString) {
         primaryTableReadStream.destroy();
     }
 
-    var csvStream = primaryTableReadStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _where.performWhere)(query)));
+    var resultStream = primaryTableReadStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _where.performWhere)(query)));
 
     if (query.orderBy) {
-        csvStream = csvStream.pipe(new _orderBy.OrderingStream(query));
+        resultStream = resultStream.pipe(new _orderBy.OrderingStream(query));
     }
 
-    csvStream = csvStream.pipe(_csv2['default'].transform((0, _offset.performOffset)(query))).pipe(_csv2['default'].transform((0, _limit.performLimit)(query, stopReading))).pipe(_csv2['default'].transform((0, _select.performSelect)(query))).pipe(_csv2['default'].stringify({ header: true }));
+    resultStream = resultStream.pipe(_csv2['default'].transform((0, _offset.performOffset)(query))).pipe(_csv2['default'].transform((0, _limit.performLimit)(query, stopReading))).pipe(_csv2['default'].transform((0, _select.performSelect)(query)));
 
-    return csvStream;
+    return resultStream;
+}
+
+function toCSV() {
+    return _csv2['default'].stringify({ header: true });
+}
+
+function startRepl() {
+    var repl = require('repl');
+
+    repl.start({
+        eval: function _eval(queryString, context, filename, callback) {
+            var resultStream = performQuery(queryString);
+
+            resultStream.pipe(toCSV()).pipe(process.stdout);
+
+            resultStream.on('end', function () {
+                callback(null, undefined);
+            });
+        },
+        ignoreUndefined: true });
 }
 
 if (!module.parent) {
-    performQuery.apply(undefined, _toConsumableArray(process.argv.slice(2))).pipe(process.stdout);
+    if (process.argv.length > 2) {
+        performQuery.apply(undefined, _toConsumableArray(process.argv.slice(2))).pipe(toCSV()).pipe(process.stdout);
+    } else {
+        // Start a REPL if no arguments have been provided
+        startRepl();
+    }
 }

@@ -1,9 +1,9 @@
 
 import {assert} from 'chai';
-import {performQuery} from '../csv-sql';
+import {performQuery, toCSV} from '../csv-sql';
 
 function queryResults(queryString, callback) {
-    const stream = performQuery(queryString);
+    const stream = performQuery(queryString).pipe(toCSV());
     const results = [];
 
     stream.on('data', data => {

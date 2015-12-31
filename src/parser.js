@@ -1,6 +1,9 @@
 
 export function parseQuery(query) {
-    const {node, rest} = parseSubQuery(query);
+    const {node, rest} = parseSubQuery(query).ifNextToken(isType('semicolon'), curr => 
+        curr.then(semicolon)
+    );
+
     if (rest.length > 0) {
         const restString = rest.map(token => token.string).join(' ');
         throw SyntaxError(`Parser completed with input remaining: "${restString}"`);
@@ -159,6 +162,7 @@ const identifier = parseTokenType('word', 'an identifier');
 const operator = parseTokenType('operator', {expected: 'an operator'});
 const comma = parseTokenType('comma');
 const number = parseTokenType('number');
+const semicolon = parseTokenType('semicolon');
 const parOpen = parseTokenType('parOpen', {expected: 'an opening parenthesis'});
 const parClose = parseTokenType('parClose', {expected: 'a closing parenthesis'});
 
@@ -226,6 +230,7 @@ var tokenTypes = {
     operator: /^(=|<=|>=|!=|<>|<|>)/,
     string: /^"[^"]*"/,
     comma: /^,/,
+    semicolon: /^;/,
 };
 
 export function tokenize(query) {

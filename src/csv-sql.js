@@ -52,8 +52,9 @@ export function toCSV() {
 
 function startRepl() {
     const repl = require('repl');
+    const replHistory = require('repl.history');
 
-    repl.start({
+    const sqlRepl = repl.start({
         eval: function _eval(queryString, context, filename, callback) {
             const resultStream = performQuery(queryString);
 
@@ -67,6 +68,8 @@ function startRepl() {
         },
         ignoreUndefined: true,
     });
+
+    replHistory(sqlRepl, `${__dirname}/.repl_history`);
 }
 
 

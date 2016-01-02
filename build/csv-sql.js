@@ -65,8 +65,9 @@ function toCSV() {
 
 function startRepl() {
     var repl = require('repl');
+    var replHistory = require('repl.history');
 
-    repl.start({
+    var sqlRepl = repl.start({
         eval: function _eval(queryString, context, filename, callback) {
             var resultStream = performQuery(queryString);
 
@@ -77,6 +78,8 @@ function startRepl() {
             });
         },
         ignoreUndefined: true });
+
+    replHistory(sqlRepl, '' + __dirname + '/.repl_history');
 }
 
 if (!module.parent) {

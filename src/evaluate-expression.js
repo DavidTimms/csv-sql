@@ -44,9 +44,30 @@ function performBinaryOperation(operator, left, right) {
             return Boolean(left) || Boolean(right);
         case 'AND':
             return Boolean(left) && Boolean(right);
+        case 'LIKE':
+            return str(left).search(patternToRegExp(right)) !== -1;
         default:
             throw Error(`Unknown operator: ${operator}`);   
     }
+}
+
+const escapeChars = '.[]\\^|$()?:*+{}!';
+
+const escapeCharsRegExp = new RegExp(
+    `(${escapeChars.split('').map(c => '\\' + c).join('|')})`,
+    'g'
+);
+
+const patternRegExpCache = {};
+
+export function patternToRegExp(pattern) {
+    if (!patternRegExpCache.hasOwnProperty(pattern)) {
+        const regExpString = pattern
+            .replace(escapeCharsRegExp, '\\$1')
+            .replace(/_|%/g, c => c === '_' ? '.' : '.*');
+        patternRegExpCache[pattern] = new RegExp(`^${regExpString}$`, 'gi');
+    }
+    return patternRegExpCache[pattern];
 }
 
 function str(value) {

@@ -4,6 +4,8 @@ var _chai = require('chai');
 
 var _csvSql = require('../csv-sql');
 
+var _evaluateExpression = require('../evaluate-expression');
+
 function queryResults(queryString, callback) {
     var stream = (0, _csvSql.performQuery)(queryString).pipe((0, _csvSql.toCSV)());
     var results = [];
@@ -23,6 +25,12 @@ function queryResultsEqual(queryString, expected) {
             resolve(_chai.assert.deepEqual(results, expected));
         });
     });
+}
+
+function regExpEqual(re1, re2) {
+    if (re1.source !== re2.source) {
+        throw new _chai.AssertionError('expected ' + re1 + ' to equal ' + re2);
+    }
 }
 
 describe('performQuery', function () {
@@ -74,5 +82,33 @@ describe('performQuery', function () {
     it('should support ORDER BY multiple columns', function () {
         var queryString = 'SELECT name FROM "test/test.csv" ORDER BY gender, age DESC';
         return queryResultsEqual(queryString, ['name', 'Jenny Bloggs', 'Bob Jones', 'David Timms']);
+    });
+
+    it('should support the LIKE operator', function () {
+        var prefixQuery = 'SELECT name FROM "test/test.csv" WHERE name LIKE "b%"';
+        return queryResultsEqual(prefixQuery, ['name', 'Bob Jones']);
+
+        var suffixQuery = 'SELECT name FROM "test/test.csv" WHERE name LIKE "%ms"';
+        return queryResultsEqual(suffixQuery, ['name', 'David Timms']);
+
+        var containsQuery = 'SELECT name FROM "test/test.csv" WHERE name LIKE "%O%"';
+        return queryResultsEqual(suffixQuery, ['name', 'Jenny Bloggs', 'Bob Jones']);
+
+        var fixedLengthQuery = 'SELECT name FROM "test/test.csv" WHERE name LIKE "J_n_y B____s"';
+        return queryResultsEqual(suffixQuery, ['name', 'Jenny Bloggs']);
+    });
+});
+
+describe('patternToRegExp', function () {
+    it('should leave alphanumeric characters unchanged', function () {
+        regExpEqual((0, _evaluateExpression.patternToRegExp)('This is a test 123'), /^This is a test 123$/gi);
+    });
+
+    it('should escape regex special characters', function () {
+        regExpEqual((0, _evaluateExpression.patternToRegExp)('^(3*4) + [$!]?'), /^\^\(3\*4\) \+ \[\$\!\]\?$/gi);
+    });
+
+    it('should replace percentage and undscore with their regex equivalents', function () {
+        regExpEqual((0, _evaluateExpression.patternToRegExp)('%C___ing%'), /^.*C...ing.*$/gi);
     });
 });

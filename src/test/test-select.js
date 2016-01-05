@@ -1,6 +1,7 @@
 
-import {assert} from 'chai';
+import {assert, AssertionError} from 'chai';
 import {performQuery, toCSV} from '../csv-sql';
+import {patternToRegExp} from '../evaluate-expression';
 
 function queryResults(queryString, callback) {
     const stream = performQuery(queryString).pipe(toCSV());
@@ -23,6 +24,11 @@ function queryResultsEqual(queryString, expected) {
     });
 }
 
+function regExpEqual(re1, re2) {
+    if (re1.source !== re2.source) {
+        throw new AssertionError(`expected ${re1} to equal ${re2}`);
+    }
+}
 
 describe('performQuery', () => {
 
@@ -123,5 +129,47 @@ describe('performQuery', () => {
             'Bob Jones',
             'David Timms',
         ]);
+    });
+
+    it('should support the LIKE operator', () => {
+        const prefixQuery = 'SELECT name FROM "test/test.csv" WHERE name LIKE "b%"';
+        return queryResultsEqual(prefixQuery, [
+            'name',
+            'Bob Jones',
+        ]);
+
+        const suffixQuery = 'SELECT name FROM "test/test.csv" WHERE name LIKE "%ms"';
+        return queryResultsEqual(suffixQuery, [
+            'name',
+            'David Timms',
+        ]);
+
+        const containsQuery = 'SELECT name FROM "test/test.csv" WHERE name LIKE "%O%"';
+        return queryResultsEqual(suffixQuery, [
+            'name',
+            'Jenny Bloggs',
+            'Bob Jones',
+        ]);
+
+        const fixedLengthQuery = 
+            'SELECT name FROM "test/test.csv" WHERE name LIKE "J_n_y B____s"';
+        return queryResultsEqual(suffixQuery, [
+            'name',
+            'Jenny Bloggs',
+        ]);
+    });
+});
+
+describe('patternToRegExp', () => {
+    it('should leave alphanumeric characters unchanged', () => {
+        regExpEqual(patternToRegExp('This is a test 123'), /^This is a test 123$/gi);
+    });
+
+    it('should escape regex special characters', () => {
+        regExpEqual(patternToRegExp('^(3*4) + [$!]?'), /^\^\(3\*4\) \+ \[\$\!\]\?$/gi);
+    });
+
+    it('should replace percentage and undscore with their regex equivalents', () => {
+        regExpEqual(patternToRegExp('%C___ing%'), /^.*C...ing.*$/gi);
     });
 });

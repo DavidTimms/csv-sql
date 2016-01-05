@@ -4,6 +4,7 @@ Object.defineProperty(exports, '__esModule', {
     value: true
 });
 exports.evaluateExpression = evaluateExpression;
+exports.patternToRegExp = patternToRegExp;
 exports.isNull = isNull;
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
@@ -51,9 +52,29 @@ function performBinaryOperation(operator, left, right) {
             return Boolean(left) || Boolean(right);
         case 'AND':
             return Boolean(left) && Boolean(right);
+        case 'LIKE':
+            return str(left).search(patternToRegExp(right)) !== -1;
         default:
             throw Error('Unknown operator: ' + operator);
     }
+}
+
+var escapeChars = '.[]\\^|$()?:*+{}!';
+
+var escapeCharsRegExp = new RegExp('(' + escapeChars.split('').map(function (c) {
+    return '\\' + c;
+}).join('|') + ')', 'g');
+
+var patternRegExpCache = {};
+
+function patternToRegExp(pattern) {
+    if (!patternRegExpCache.hasOwnProperty(pattern)) {
+        var regExpString = pattern.replace(escapeCharsRegExp, '\\$1').replace(/_|%/g, function (c) {
+            return c === '_' ? '.' : '.*';
+        });
+        patternRegExpCache[pattern] = new RegExp('^' + regExpString + '$', 'gi');
+    }
+    return patternRegExpCache[pattern];
 }
 
 function str(value) {

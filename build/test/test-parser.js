@@ -16,10 +16,20 @@ describe('tokenize', function () {
     it('should detect identifiers', function () {
         var tokens = (0, _tokenizer.tokenize)('SELECTED hello Dog a _underscored\nmulti_word_thing');
 
-        _chai.assert.deepEqual(tokens, [{ type: 'word', string: 'SELECTED' }, { type: 'word', string: 'hello' }, { type: 'word', string: 'Dog' }, { type: 'word', string: 'a' }, { type: 'word', string: '_underscored' }, { type: 'word', string: 'multi_word_thing' }]);
+        _chai.assert.deepEqual(tokens, [{ type: 'identifier', string: 'SELECTED', value: 'SELECTED' }, { type: 'identifier', string: 'hello', value: 'hello' }, { type: 'identifier', string: 'Dog', value: 'Dog' }, { type: 'identifier', string: 'a', value: 'a' }, { type: 'identifier', string: '_underscored', value: '_underscored' }, { type: 'identifier', string: 'multi_word_thing', value: 'multi_word_thing' }]);
     });
 
-    it('should detect identifiers with spaces using backticks');
+    it('should detect identifiers with spaces using backticks', function () {
+        var tokens = (0, _tokenizer.tokenize)('`This is a literal identifier`` 1 2 \\` 3 `');
+
+        _chai.assert.deepEqual(tokens, [{
+            type: 'identifier',
+            string: '`This is a literal identifier`',
+            value: 'This is a literal identifier' }, {
+            type: 'identifier',
+            string: '` 1 2 \\` 3 `',
+            value: ' 1 2 ` 3 ' }]);
+    });
 
     it('should detect numbers', function () {
         var tokens = (0, _tokenizer.tokenize)('  3 56.3 3.141592 9832 293829047240 ');
@@ -36,13 +46,13 @@ describe('tokenize', function () {
     it('should detect escaped string literals', function () {
         var tokens = (0, _tokenizer.tokenize)('\'how\\\'s "it" going?\'  "great!\\\\" ');
 
-        _chai.assert.deepEqual(tokens, [{ type: 'string', string: '"how\'s \\"it\\" going?"', value: 'how\'s "it" going?' }, { type: 'string', string: '"great!\\\\"', value: 'great!\\' }]);
+        _chai.assert.deepEqual(tokens, [{ type: 'string', string: '\'how\\\'s "it" going?\'', value: 'how\'s "it" going?' }, { type: 'string', string: '"great!\\\\"', value: 'great!\\' }]);
     });
 
     it('should detect tokens around strings', function () {
         var tokens = (0, _tokenizer.tokenize)('="foo",\'bar\'');
 
-        _chai.assert.deepEqual(tokens, [{ type: 'operator', string: '=' }, { type: 'string', string: '"foo"', value: 'foo' }, { type: 'comma', string: ',' }, { type: 'string', string: '"bar"', value: 'bar' }]);
+        _chai.assert.deepEqual(tokens, [{ type: 'operator', string: '=' }, { type: 'string', string: '"foo"', value: 'foo' }, { type: 'comma', string: ',' }, { type: 'string', string: '\'bar\'', value: 'bar' }]);
     });
 
     it('should detect parenthesis', function () {
@@ -60,13 +70,13 @@ describe('tokenize', function () {
     it('should detect commas', function () {
         var tokens = (0, _tokenizer.tokenize)(', so, many,,, commas,');
 
-        _chai.assert.deepEqual(tokens, [{ type: 'comma', string: ',' }, { type: 'word', string: 'so' }, { type: 'comma', string: ',' }, { type: 'word', string: 'many' }, { type: 'comma', string: ',' }, { type: 'comma', string: ',' }, { type: 'comma', string: ',' }, { type: 'word', string: 'commas' }, { type: 'comma', string: ',' }]);
+        _chai.assert.deepEqual(tokens, [{ type: 'comma', string: ',' }, { type: 'identifier', string: 'so', value: 'so' }, { type: 'comma', string: ',' }, { type: 'identifier', string: 'many', value: 'many' }, { type: 'comma', string: ',' }, { type: 'comma', string: ',' }, { type: 'comma', string: ',' }, { type: 'identifier', string: 'commas', value: 'commas' }, { type: 'comma', string: ',' }]);
     });
 
     it('should detect commas', function () {
         var tokens = (0, _tokenizer.tokenize)(', so, many,,, commas,');
 
-        _chai.assert.deepEqual(tokens, [{ type: 'comma', string: ',' }, { type: 'word', string: 'so' }, { type: 'comma', string: ',' }, { type: 'word', string: 'many' }, { type: 'comma', string: ',' }, { type: 'comma', string: ',' }, { type: 'comma', string: ',' }, { type: 'word', string: 'commas' }, { type: 'comma', string: ',' }]);
+        _chai.assert.deepEqual(tokens, [{ type: 'comma', string: ',' }, { type: 'identifier', string: 'so', value: 'so' }, { type: 'comma', string: ',' }, { type: 'identifier', string: 'many', value: 'many' }, { type: 'comma', string: ',' }, { type: 'comma', string: ',' }, { type: 'comma', string: ',' }, { type: 'identifier', string: 'commas', value: 'commas' }, { type: 'comma', string: ',' }]);
     });
 
     it('should detect operators', function () {
@@ -92,18 +102,21 @@ describe('parseQuery', function () {
             outputColumns: [{
                 type: 'namedExpression',
                 expression: {
-                    type: 'word',
-                    string: 'name' },
+                    type: 'identifier',
+                    string: 'name',
+                    value: 'name' },
                 name: 'name' }, {
                 type: 'namedExpression',
                 expression: {
-                    type: 'word',
-                    string: 'age' },
+                    type: 'identifier',
+                    string: 'age',
+                    value: 'age' },
                 name: 'age' }, {
                 type: 'namedExpression',
                 expression: {
-                    type: 'word',
-                    string: 'gender' },
+                    type: 'identifier',
+                    string: 'gender',
+                    value: 'gender' },
                 name: 'gender' }],
             primaryTable: 'people.csv',
             condition: null,
@@ -116,8 +129,9 @@ describe('parseQuery', function () {
         _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT a AS b FROM "c.csv"').outputColumns, [{
             type: 'namedExpression',
             expression: {
-                type: 'word',
-                string: 'a' },
+                type: 'identifier',
+                string: 'a',
+                value: 'a' },
             name: 'b' }]);
     });
 
@@ -128,11 +142,13 @@ describe('parseQuery', function () {
                 type: 'binaryExpression',
                 operator: '>',
                 left: {
-                    type: 'word',
-                    string: 'a' },
+                    type: 'identifier',
+                    string: 'a',
+                    value: 'a' },
                 right: {
-                    type: 'word',
-                    string: 'b' },
+                    type: 'identifier',
+                    string: 'b',
+                    value: 'b' },
                 string: 'a > b' },
             name: 'a > b' }]);
     });
@@ -148,15 +164,17 @@ describe('parseQuery', function () {
                     type: 'call',
                     functionName: 'UPPERCASE',
                     arguments: [{
-                        type: 'word',
-                        string: 'left' }],
+                        type: 'identifier',
+                        string: 'left',
+                        value: 'left' }],
                     string: 'UPPERCASE(left)' },
                 right: {
                     type: 'call',
                     functionName: 'UPPERCASE',
                     arguments: [{
-                        type: 'word',
-                        string: 'right' }],
+                        type: 'identifier',
+                        string: 'right',
+                        value: 'right' }],
                     string: 'UPPERCASE(right)' },
                 string: 'UPPERCASE(left) = UPPERCASE(right)' },
             name: 'match' }]);
@@ -168,11 +186,13 @@ describe('parseQuery', function () {
             type: 'binaryExpression',
             operator: 'AND',
             left: {
-                type: 'word',
-                string: 'a' },
+                type: 'identifier',
+                string: 'a',
+                value: 'a' },
             right: {
-                type: 'word',
-                string: 'b' },
+                type: 'identifier',
+                string: 'b',
+                value: 'b' },
             string: 'a AND b' });
     });
 
@@ -187,15 +207,18 @@ describe('parseQuery', function () {
                     type: 'binaryExpression',
                     operator: 'OR',
                     left: {
-                        type: 'word',
-                        string: 'a' },
+                        type: 'identifier',
+                        string: 'a',
+                        value: 'a' },
                     right: {
-                        type: 'word',
-                        string: 'b' },
+                        type: 'identifier',
+                        string: 'b',
+                        value: 'b' },
                     string: 'a OR b' },
                 right: {
-                    type: 'word',
-                    string: 'c' },
+                    type: 'identifier',
+                    string: 'c',
+                    value: 'c' },
                 string: '(a OR b) AND c' },
             name: '(a OR b) AND c' }]);
     });
@@ -218,8 +241,9 @@ describe('parseQuery', function () {
             type: 'binaryExpression',
             operator: '>',
             left: {
-                type: 'word',
-                string: 'a' },
+                type: 'identifier',
+                string: 'a',
+                value: 'a' },
             right: {
                 type: 'number',
                 value: 50,
@@ -232,8 +256,9 @@ describe('parseQuery', function () {
         _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy, [{
             direction: 'asc',
             expression: {
-                type: 'word',
-                string: 'b' } }]);
+                type: 'identifier',
+                string: 'b',
+                value: 'b' } }]);
     });
 
     it('should accept an ORDER BY clause with multiple terms', function () {
@@ -244,20 +269,23 @@ describe('parseQuery', function () {
                 type: 'call',
                 functionName: 'UPPERCASE',
                 arguments: [{
-                    type: 'word',
-                    string: 'b' }],
+                    type: 'identifier',
+                    string: 'b',
+                    value: 'b' }],
                 string: 'UPPERCASE(b)' } }, {
             direction: 'asc',
             expression: {
-                type: 'word',
-                string: 'c' } }, {
+                type: 'identifier',
+                string: 'c',
+                value: 'c' } }, {
             direction: 'asc',
             expression: {
                 type: 'binaryExpression',
                 operator: '=',
                 left: {
-                    type: 'word',
-                    string: 'd' },
+                    type: 'identifier',
+                    string: 'd',
+                    value: 'd' },
                 right: {
                     type: 'string',
                     string: '"test"',

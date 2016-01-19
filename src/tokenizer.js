@@ -1,9 +1,6 @@
 
-
-// TODO rename 'word' to identifier
-
-var tokenTypes = {
-    word: /^[a-z_]\w*/i,
+const tokenTypes = {
+    identifier: /^[a-z_]\w*/i,
     parOpen: /^\(/,
     parClose: /^\)/,
     star: /^\*/,
@@ -44,6 +41,8 @@ export function tokenize(query) {
     return tokens;
 }
 
+const BACKTICK = '`';
+
 const KEYWORDS = [
     'SELECT',
     'FROM',
@@ -80,7 +79,7 @@ const operatorRegex = new RegExp(`^(${ WORD_OPERATORS.join('|') })$`, 'i');
 function processRawToken(rest, token) {
 
     switch (token.type) {
-        case 'word':
+        case 'identifier':
             if (keywordRegex.test(token.string)) {
                 token.type = 'keyword';
                 token.string = token.string.toUpperCase();
@@ -88,6 +87,9 @@ function processRawToken(rest, token) {
             else if (operatorRegex.test(token.string)) {
                 token.type = 'operator';
                 token.string = token.string.toUpperCase();
+            }
+            else {
+                token.value = token.string;
             }
             break;
 
@@ -119,8 +121,8 @@ function takeStringLiteral(delimiter) {
                     case delimiter:
                     const rest = input.slice(index + 1);
                         const token = {
-                            type: 'string',
-                            string: JSON.stringify(value),
+                            type: delimiter === BACKTICK ? 'identifier' : 'string',
+                            string: delimiter + input.slice(0, index + 1),
                             value,
                         }
                         return [rest, token];

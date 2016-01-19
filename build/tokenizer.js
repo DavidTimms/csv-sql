@@ -1,7 +1,3 @@
-
-
-// TODO rename 'word' to identifier
-
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -12,7 +8,7 @@ exports.tokenize = tokenize;
 function _slicedToArray(arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }
 
 var tokenTypes = {
-    word: /^[a-z_]\w*/i,
+    identifier: /^[a-z_]\w*/i,
     parOpen: /^\(/,
     parClose: /^\)/,
     star: /^\*/,
@@ -56,6 +52,8 @@ function tokenize(query) {
     return tokens;
 }
 
+var BACKTICK = '`';
+
 var KEYWORDS = ['SELECT', 'FROM', 'WHERE', 'GROUP', 'BY', 'AS', 'ORDER', 'ASC', 'DESC', 'LIMIT', 'OFFSET', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'NOT', 'NULL', 'TRUE', 'FALSE'];
 
 var WORD_OPERATORS = ['AND', 'OR', 'IS', 'LIKE'];
@@ -66,13 +64,15 @@ var operatorRegex = new RegExp('^(' + WORD_OPERATORS.join('|') + ')$', 'i');
 function processRawToken(rest, token) {
 
     switch (token.type) {
-        case 'word':
+        case 'identifier':
             if (keywordRegex.test(token.string)) {
                 token.type = 'keyword';
                 token.string = token.string.toUpperCase();
             } else if (operatorRegex.test(token.string)) {
                 token.type = 'operator';
                 token.string = token.string.toUpperCase();
+            } else {
+                token.value = token.string;
             }
             break;
 
@@ -121,8 +121,8 @@ function takeStringLiteral(delimiter) {
                         case delimiter:
                             var rest = input.slice(index + 1);
                             var token = {
-                                type: 'string',
-                                string: JSON.stringify(value),
+                                type: delimiter === BACKTICK ? 'identifier' : 'string',
+                                string: delimiter + input.slice(0, index + 1),
                                 value: value };
                             return [rest, token];
 

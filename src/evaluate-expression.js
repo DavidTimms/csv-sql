@@ -5,8 +5,8 @@ export function evaluateExpression(exp, context) {
         case 'string':
         case 'literal':
             return exp.value;
-        case 'word':
-            return context[exp.string];
+        case 'identifier':
+            return context[exp.value];
         case 'call':
             if (exp.functionName in functions) {
                 const argValues = exp.arguments.map(

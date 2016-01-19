@@ -97,8 +97,8 @@ function atom(_ref2) {
         }
     }
     // function call
-    else if (isType('word', first) && isType('parOpen', rest[0])) {
-        return parser(rest.slice(1), { type: 'call', functionName: first.string.toUpperCase() }).bind('arguments', many(expression, { separator: comma, min: 0 })).then(parClose).mapNode(function (node) {
+    else if (isType('identifier', first) && isType('parOpen', rest[0])) {
+        return parser(rest.slice(1), { type: 'call', functionName: first.value.toUpperCase() }).bind('arguments', many(expression, { separator: comma, min: 0 })).then(parClose).mapNode(function (node) {
             var argsString = node.arguments.map(function (arg) {
                 return arg.string;
             }).join(', ');
@@ -106,7 +106,7 @@ function atom(_ref2) {
         });
     }
     // identifier, number, or string
-    else if (isType(['word', 'number', 'string'], first)) {
+    else if (isType(['identifier', 'number', 'string'], first)) {
         return parser(rest, first);
     }
 
@@ -144,7 +144,7 @@ function namedExpression(tokens) {
 
     if (isKeyword('AS', rest[0])) {
         return parser(rest.slice(1), node).bind('name', atom).mapNode(function (node) {
-            node.name = node.name.value || node.name.string;
+            node.name = node.name.value;
         });
     } else return parser(rest, node);
 }
@@ -166,7 +166,7 @@ function keyword(word) {
 }
 
 var tableName = parseTokenType('string', { expected: 'a table name' });
-var identifier = parseTokenType('word', 'an identifier');
+var identifier = parseTokenType('identifier', 'an identifier');
 var operator = parseTokenType('operator', { expected: 'an operator' });
 var comma = parseTokenType('comma');
 var number = parseTokenType('number');

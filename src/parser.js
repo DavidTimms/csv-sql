@@ -84,8 +84,8 @@ function atom([first, ...rest]) {
         }
     }
     // function call
-    else if (isType('word', first) && isType('parOpen', rest[0])) {
-        return parser(rest.slice(1), {type: 'call', functionName: first.string.toUpperCase()})
+    else if (isType('identifier', first) && isType('parOpen', rest[0])) {
+        return parser(rest.slice(1), {type: 'call', functionName: first.value.toUpperCase()})
             .bind('arguments', many(expression, {separator: comma, min: 0}))
             .then(parClose)
             .mapNode(node => {
@@ -94,7 +94,7 @@ function atom([first, ...rest]) {
             });
     }
     // identifier, number, or string
-    else if (isType(['word', 'number', 'string'], first)) {
+    else if (isType(['identifier', 'number', 'string'], first)) {
         return parser(rest, first);
     }
 
@@ -135,7 +135,7 @@ function namedExpression(tokens) {
         return parser(rest.slice(1), node)
             .bind('name', atom)
             .mapNode(node => {
-                node.name = node.name.value || node.name.string;
+                node.name = node.name.value;
             });
     }
     else return parser(rest, node);
@@ -160,7 +160,7 @@ function keyword(word) {
 }
 
 const tableName = parseTokenType('string', {expected: 'a table name'});
-const identifier = parseTokenType('word', 'an identifier');
+const identifier = parseTokenType('identifier', 'an identifier');
 const operator = parseTokenType('operator', {expected: 'an operator'});
 const comma = parseTokenType('comma');
 const number = parseTokenType('number');

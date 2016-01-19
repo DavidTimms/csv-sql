@@ -23,16 +23,31 @@ describe('tokenize', () => {
         const tokens = tokenize('SELECTED hello Dog a _underscored\nmulti_word_thing');
 
         assert.deepEqual(tokens, [
-            {type: 'word', string: 'SELECTED'},
-            {type: 'word', string: 'hello'},
-            {type: 'word', string: 'Dog'},
-            {type: 'word', string: 'a'},
-            {type: 'word', string: '_underscored'},
-            {type: 'word', string: 'multi_word_thing'},
+            {type: 'identifier', string: 'SELECTED', value: 'SELECTED'},
+            {type: 'identifier', string: 'hello', value: 'hello'},
+            {type: 'identifier', string: 'Dog', value: 'Dog'},
+            {type: 'identifier', string: 'a', value: 'a'},
+            {type: 'identifier', string: '_underscored', value: '_underscored'},
+            {type: 'identifier', string: 'multi_word_thing', value: 'multi_word_thing'},
         ]);
     });
 
-    it('should detect identifiers with spaces using backticks');
+    it('should detect identifiers with spaces using backticks', () => {
+        const tokens = tokenize('`This is a literal identifier`` 1 2 \\` 3 `');
+
+        assert.deepEqual(tokens, [
+            {
+                type: 'identifier',
+                string: '`This is a literal identifier`',
+                value: 'This is a literal identifier',
+            },
+            {
+                type: 'identifier',
+                string: '` 1 2 \\` 3 `',
+                value: ' 1 2 ` 3 ',
+            },
+        ]);
+    });
 
     it('should detect numbers', () => {
         const tokens = tokenize('  3 56.3 3.141592 9832 293829047240 ');
@@ -58,7 +73,7 @@ describe('tokenize', () => {
         const tokens = tokenize(`'how\\'s "it" going?'  "great!\\\\" `);
 
         assert.deepEqual(tokens, [
-            {type: 'string', string: '"how\'s \\"it\\" going?"', value: 'how\'s "it" going?'},
+            {type: 'string', string: '\'how\\\'s "it" going?\'', value: 'how\'s "it" going?'},
             {type: 'string', string: '"great!\\\\"', value: 'great!\\'},
         ]);
     });
@@ -70,7 +85,7 @@ describe('tokenize', () => {
             {type: 'operator', string: '='},
             {type: 'string', string: '"foo"', value: 'foo'},
             {type: 'comma', string: ','},
-            {type: 'string', string: '"bar"', value: 'bar'},
+            {type: 'string', string: '\'bar\'', value: 'bar'},
         ]);
     });
 
@@ -106,13 +121,13 @@ describe('tokenize', () => {
 
         assert.deepEqual(tokens, [
             {type: 'comma', string: ','},
-            {type: 'word', string: 'so'},
+            {type: 'identifier', string: 'so', value: 'so'},
             {type: 'comma', string: ','},
-            {type: 'word', string: 'many'},
+            {type: 'identifier', string: 'many', value: 'many'},
             {type: 'comma', string: ','},
             {type: 'comma', string: ','},
             {type: 'comma', string: ','},
-            {type: 'word', string: 'commas'},
+            {type: 'identifier', string: 'commas', value: 'commas'},
             {type: 'comma', string: ','},
         ]);
     });
@@ -122,13 +137,13 @@ describe('tokenize', () => {
 
         assert.deepEqual(tokens, [
             {type: 'comma', string: ','},
-            {type: 'word', string: 'so'},
+            {type: 'identifier', string: 'so', value: 'so'},
             {type: 'comma', string: ','},
-            {type: 'word', string: 'many'},
+            {type: 'identifier', string: 'many', value: 'many'},
             {type: 'comma', string: ','},
             {type: 'comma', string: ','},
             {type: 'comma', string: ','},
-            {type: 'word', string: 'commas'},
+            {type: 'identifier', string: 'commas', value: 'commas'},
             {type: 'comma', string: ','},
         ]);
     });
@@ -168,24 +183,27 @@ describe('parseQuery', () => {
                 {
                     type: 'namedExpression',
                     expression: {
-                        type: 'word',
+                        type: 'identifier',
                         string: 'name',
+                        value: 'name',
                     },
                     name: 'name',
                 },
                 {
                     type: 'namedExpression',
                     expression: {
-                        type: 'word',
+                        type: 'identifier',
                         string: 'age',
+                        value: 'age',
                     },
                     name: 'age',
                 },
                 {
                     type: 'namedExpression',
                     expression: {
-                        type: 'word',
+                        type: 'identifier',
                         string: 'gender',
+                        value: 'gender',
                     },
                     name: 'gender',
                 },
@@ -203,8 +221,9 @@ describe('parseQuery', () => {
             {
                 type: 'namedExpression',
                 expression: {
-                    type: 'word',
+                    type: 'identifier',
                     string: 'a',
+                    value: 'a',
                 },
                 name: 'b',
             },
@@ -219,12 +238,14 @@ describe('parseQuery', () => {
                     type: 'binaryExpression',
                     operator: '>',
                     left: {
-                        type: 'word',
+                        type: 'identifier',
                         string: 'a',
+                        value: 'a',
                     },
                     right: {
-                        type: 'word',
+                        type: 'identifier',
                         string: 'b',
+                        value: 'b',
                     },
                     string: 'a > b',
                 },
@@ -246,8 +267,9 @@ describe('parseQuery', () => {
                         type: 'call',
                         functionName: 'UPPERCASE',
                         arguments: [{
-                            type: 'word',
+                            type: 'identifier',
                             string: 'left',
+                            value: 'left',
                         }],
                         string: 'UPPERCASE(left)',
                     },
@@ -255,8 +277,9 @@ describe('parseQuery', () => {
                         type: 'call',
                         functionName: 'UPPERCASE',
                         arguments: [{
-                            type: 'word',
+                            type: 'identifier',
                             string: 'right',
+                            value: 'right',
                         }],
                         string: 'UPPERCASE(right)',
                     },
@@ -273,12 +296,14 @@ describe('parseQuery', () => {
             type: 'binaryExpression',
             operator: 'AND',
             left: {
-                type: 'word',
+                type: 'identifier',
                 string: 'a',
+                value: 'a',
             },
             right: {
-                type: 'word',
+                type: 'identifier',
                 string: 'b',
+                value: 'b',
             },
             string: 'a AND b',
         });
@@ -296,18 +321,21 @@ describe('parseQuery', () => {
                         type: 'binaryExpression',
                         operator: 'OR',
                         left: {
-                            type: 'word',
+                            type: 'identifier',
                             string: 'a',
+                            value: 'a',
                         },
                         right: {
-                            type: 'word',
+                            type: 'identifier',
                             string: 'b',
+                            value: 'b',
                         },
                         string: 'a OR b',
                     },
                     right: {
-                        type: 'word',
+                        type: 'identifier',
                         string: 'c',
+                        value: 'c',
                     },
                     string: '(a OR b) AND c',
                 },
@@ -334,8 +362,9 @@ describe('parseQuery', () => {
             type: 'binaryExpression',
             operator: '>',
             left: {
-                type: 'word',
+                type: 'identifier',
                 string: 'a',
+                value: 'a',
             },
             right: {
                 type: 'number',
@@ -352,8 +381,9 @@ describe('parseQuery', () => {
             {
                 direction: 'asc',
                 expression: {
-                    type: 'word',
+                    type: 'identifier',
                     string: 'b',
+                    value: 'b',
                 },
             },
         ]);
@@ -368,8 +398,9 @@ describe('parseQuery', () => {
                     type: 'call',
                     functionName: 'UPPERCASE',
                     arguments: [{
-                        type: 'word',
+                        type: 'identifier',
                         string: 'b',
+                        value: 'b',
                     }],
                     string: 'UPPERCASE(b)',
                 },
@@ -377,8 +408,9 @@ describe('parseQuery', () => {
             {
                 direction: 'asc',
                 expression: {
-                    type: 'word',
+                    type: 'identifier',
                     string: 'c',
+                    value: 'c',
                 },
             },
             {
@@ -387,8 +419,9 @@ describe('parseQuery', () => {
                     type: 'binaryExpression',
                     operator: '=',
                     left: {
-                        type: 'word',
+                        type: 'identifier',
                         string: 'd',
+                        value: 'd',
                     },
                     right: {
                         type: 'string',

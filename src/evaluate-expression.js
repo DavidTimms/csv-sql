@@ -70,11 +70,6 @@ export function patternToRegExp(pattern) {
     return patternRegExpCache[pattern];
 }
 
-function str(value) {
-    if (value === null || value === undefined) return '';
-    else return String(value);
-}
-
 const functions = {
     UPPERCASE(s) {
         return s === null && s === undefined ? null : String(s).toUpperCase();
@@ -82,11 +77,43 @@ const functions = {
     LOWERCASE(s) {
         return s === null && s === undefined ? null : String(s).toLowerCase();
     },
+    LEN(s) {
+        return isNull(s) ? null : str(s).length;
+    },
     COALESCE(...args) {
         for (let i = 0; i < args.length; i++) {
             if (!isNull(args[i])) return args[i];
         }
         return null;
+    },
+    TRIM(s, chars) {
+        if (isNull(s)) return null;
+
+        s = str(s);
+
+        if (arguments.length < 2) {
+            return s.trim();
+        }
+        else {
+            let startIndex = 0
+            let endIndex = s.length - 1;
+
+            while (chars.indexOf(s[startIndex]) >= 0) startIndex++;
+            if (startIndex === s.length) return '';
+            while (chars.indexOf(s[endIndex]) >= 0) endIndex--;
+            return s.substring(startIndex, endIndex + 1);
+        }
+    },
+    LTRIM(s, chars=' \t\n\r', min=0) {
+        if (isNull(s)) return null;
+
+        s = str(s);
+        let startIndex = 0
+
+        while (chars.indexOf(s[startIndex]) >= 0 && s.length - startIndex > min) {
+            startIndex++;
+        };
+        return s.substring(startIndex);
     },
 };
 
@@ -94,4 +121,9 @@ functions.IFNULL = functions.COALESCE;
 
 export function isNull(value) {
     return value === null || value === undefined || value === '';
+}
+
+function str(value) {
+    if (value === null || value === undefined) return '';
+    else return String(value);
 }

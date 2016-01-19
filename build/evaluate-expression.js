@@ -77,16 +77,15 @@ function patternToRegExp(pattern) {
     return patternRegExpCache[pattern];
 }
 
-function str(value) {
-    if (value === null || value === undefined) return '';else return String(value);
-}
-
 var functions = {
     UPPERCASE: function UPPERCASE(s) {
         return s === null && s === undefined ? null : String(s).toUpperCase();
     },
     LOWERCASE: function LOWERCASE(s) {
         return s === null && s === undefined ? null : String(s).toLowerCase();
+    },
+    LEN: function LEN(s) {
+        return isNull(s) ? null : str(s).length;
     },
     COALESCE: function COALESCE() {
         for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
@@ -97,10 +96,45 @@ var functions = {
             if (!isNull(args[i])) return args[i];
         }
         return null;
+    },
+    TRIM: function TRIM(s, chars) {
+        if (isNull(s)) return null;
+
+        s = str(s);
+
+        if (arguments.length < 2) {
+            return s.trim();
+        } else {
+            var startIndex = 0;
+            var endIndex = s.length - 1;
+
+            while (chars.indexOf(s[startIndex]) >= 0) startIndex++;
+            if (startIndex === s.length) return '';
+            while (chars.indexOf(s[endIndex]) >= 0) endIndex--;
+            return s.substring(startIndex, endIndex + 1);
+        }
+    },
+    LTRIM: function LTRIM(s) {
+        var chars = arguments[1] === undefined ? ' \t\n\r' : arguments[1];
+        var min = arguments[2] === undefined ? 0 : arguments[2];
+
+        if (isNull(s)) return null;
+
+        s = str(s);
+        var startIndex = 0;
+
+        while (chars.indexOf(s[startIndex]) >= 0 && s.length - startIndex > min) {
+            startIndex++;
+        };
+        return s.substring(startIndex);
     } };
 
 functions.IFNULL = functions.COALESCE;
 
 function isNull(value) {
     return value === null || value === undefined || value === '';
+}
+
+function str(value) {
+    if (value === null || value === undefined) return '';else return String(value);
 }

@@ -34,21 +34,23 @@ function performQuery(queryString) {
     var query = (0, _parser.parseQuery)(queryString);
     //console.log(JSON.stringify(query, null, 4));
 
-    if (!_fs2['default'].existsSync(query.primaryTable)) {
-        throw Error('file not found: "' + query.primaryTable + '"');
+    var filePath = query.from;
+
+    if (!_fs2['default'].existsSync(filePath)) {
+        throw Error('file not found: "' + filePath + '"');
     }
 
-    var primaryTableFileDescriptor = _fs2['default'].openSync(query.primaryTable, 'r');
-    var primaryTableReadStream = _fs2['default'].createReadStream(null, { fd: primaryTableFileDescriptor });
+    var tableFileDescriptor = _fs2['default'].openSync(filePath, 'r');
+    var tableReadStream = _fs2['default'].createReadStream(null, { fd: tableFileDescriptor });
 
     // performLimit will call this function once it has been satisifed,
     // to avoid processing the rest of the file
     function stopReading() {
-        _fs2['default'].closeSync(primaryTableFileDescriptor);
-        primaryTableReadStream.destroy();
+        _fs2['default'].closeSync(tableFileDescriptor);
+        tableReadStream.destroy();
     }
 
-    var resultStream = primaryTableReadStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _where.performWhere)(query)));
+    var resultStream = tableReadStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _where.performWhere)(query)));
 
     if (query.orderBy) {
         resultStream = resultStream.pipe(new _orderBy.OrderingStream(query));

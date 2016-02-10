@@ -168,9 +168,9 @@ describe('tokenize', () => {
 describe('parseQuery', () => {
     it('should parse basic starred queries', () => {
         assert.deepEqual(parseQuery('SELECT * FROM "example.csv"'), {
-            outputColumns: '*',
-            primaryTable: 'example.csv',
-            condition: null,
+            select: '*',
+            from: 'example.csv',
+            where: null,
             orderBy: null,
             limit: null,
             offset: null,
@@ -179,7 +179,7 @@ describe('parseQuery', () => {
     
     it('should parse queries with an output column list', () => {
         assert.deepEqual(parseQuery('SELECT name, age, gender FROM "people.csv"'), {
-            outputColumns: [
+            select: [
                 {
                     type: 'namedExpression',
                     expression: {
@@ -208,8 +208,8 @@ describe('parseQuery', () => {
                     name: 'gender',
                 },
             ],
-            primaryTable: 'people.csv',
-            condition: null,
+            from: 'people.csv',
+            where: null,
             orderBy: null,
             limit: null,
             offset: null,
@@ -217,7 +217,7 @@ describe('parseQuery', () => {
     });
     
     it('should parse queries with renamed columns', () => {
-        assert.deepEqual(parseQuery('SELECT a AS b FROM "c.csv"').outputColumns, [
+        assert.deepEqual(parseQuery('SELECT a AS b FROM "c.csv"').select, [
             {
                 type: 'namedExpression',
                 expression: {
@@ -231,7 +231,7 @@ describe('parseQuery', () => {
     });
     
     it('should parse queries with binary expressions', () => {
-        assert.deepEqual(parseQuery('SELECT a > b FROM "c.csv"').outputColumns, [
+        assert.deepEqual(parseQuery('SELECT a > b FROM "c.csv"').select, [
             {
                 type: 'namedExpression',
                 expression: {
@@ -257,7 +257,7 @@ describe('parseQuery', () => {
     it('should allow binary expressions mixed with functions and AS names', () => {
         const sql = (
             'SELECT UPPERCASE(left) = UPPERCASE(right) AS match FROM "c.csv"');
-        assert.deepEqual(parseQuery(sql).outputColumns, [
+        assert.deepEqual(parseQuery(sql).select, [
             {
                 type: 'namedExpression',
                 expression: {
@@ -292,7 +292,7 @@ describe('parseQuery', () => {
 
     it('should support the AND operator', () => {
         const sql = ('SELECT a AND b FROM "c.csv"');
-        assert.deepEqual(parseQuery(sql).outputColumns[0].expression, {
+        assert.deepEqual(parseQuery(sql).select[0].expression, {
             type: 'binaryExpression',
             operator: 'AND',
             left: {
@@ -311,7 +311,7 @@ describe('parseQuery', () => {
 
     it('should allow grouping expressions with parenthesis', () => {
         const sql = ('SELECT (a OR b) AND c FROM "d.csv"');
-        assert.deepEqual(parseQuery(sql).outputColumns, [
+        assert.deepEqual(parseQuery(sql).select, [
             {
                 type: 'namedExpression',
                 expression: {
@@ -358,7 +358,7 @@ describe('parseQuery', () => {
 
     it('should accept a WHERE clause', () => {
         const sql = ('SELECT a FROM "b.csv" WHERE a > 50');
-        assert.deepEqual(parseQuery(sql).condition, {
+        assert.deepEqual(parseQuery(sql).where, {
             type: 'binaryExpression',
             operator: '>',
             left: {

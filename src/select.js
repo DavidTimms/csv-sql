@@ -4,7 +4,7 @@ import {evaluateExpression} from './evaluate-expression';
 export function performSelect(query) {
     return inRow => {
         const outRow = {};
-        const outputColumns = query.outputColumns;
+        const outputColumns = query.select;
         if (outputColumns === '*') {
             return inRow;
         }

@@ -13,24 +13,26 @@ export function performQuery(queryString) {
     const query = parseQuery(queryString);
     //console.log(JSON.stringify(query, null, 4));
 
-    if (!fs.existsSync(query.primaryTable)) {
-        throw Error(`file not found: "${query.primaryTable}"`);
+    const filePath = query.from;
+
+    if (!fs.existsSync(filePath)) {
+        throw Error(`file not found: "${filePath}"`);
     }
 
-    const primaryTableFileDescriptor = fs.openSync(query.primaryTable, 'r');
-    const primaryTableReadStream = fs.createReadStream(
+    const tableFileDescriptor = fs.openSync(filePath, 'r');
+    const tableReadStream = fs.createReadStream(
         null,
-        {fd: primaryTableFileDescriptor}
+        {fd: tableFileDescriptor}
     );
 
     // performLimit will call this function once it has been satisifed,
     // to avoid processing the rest of the file
     function stopReading() {
-        fs.closeSync(primaryTableFileDescriptor);
-        primaryTableReadStream.destroy();
+        fs.closeSync(tableFileDescriptor);
+        tableReadStream.destroy();
     }
 
-    let resultStream = primaryTableReadStream
+    let resultStream = tableReadStream
         .pipe(csv.parse({columns: true}))
         .pipe(csv.transform(performWhere(query)))
 

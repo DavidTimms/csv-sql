@@ -10,7 +10,7 @@ var _evaluateExpression = require('./evaluate-expression');
 function performSelect(query) {
     return function (inRow) {
         var outRow = {};
-        var outputColumns = query.outputColumns;
+        var outputColumns = query.select;
         if (outputColumns === '*') {
             return inRow;
         }

@@ -31,13 +31,19 @@ function parseQuery(query) {
 function parseSubQuery(query) {
     var tokens = (0, _tokenizer.tokenize)(query);
 
-    return parser(tokens).then(keyword('SELECT')).bind('outputColumns', outputColumns).then(keyword('FROM')).bind('primaryTable', tableName).bind('condition', whereClause).bind('orderBy', orderByClause).bind('limit', limitClause).bind('offset', offsetClause);
+    return parser(tokens).then(keyword('SELECT')).bind('select', outputColumns).then(keyword('FROM')).bind('from', tableName).bind('where', whereClause)
+    //.bind('groupBy', groupBy)
+    .bind('orderBy', orderByClause).bind('limit', limitClause).bind('offset', offsetClause);
 }
 
 function whereClause(tokens) {
     return parser(tokens).ifNextToken(isKeyword('WHERE'), function (curr) {
         return curr.then(keyword('WHERE')).just(expression);
     });
+}
+
+function groupBy(tokens) {
+    return parser(tokens);
 }
 
 function orderByClause(tokens) {

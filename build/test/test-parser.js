@@ -89,9 +89,9 @@ describe('tokenize', function () {
 describe('parseQuery', function () {
     it('should parse basic starred queries', function () {
         _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT * FROM "example.csv"'), {
-            outputColumns: '*',
-            primaryTable: 'example.csv',
-            condition: null,
+            select: '*',
+            from: 'example.csv',
+            where: null,
             orderBy: null,
             limit: null,
             offset: null });
@@ -99,7 +99,7 @@ describe('parseQuery', function () {
 
     it('should parse queries with an output column list', function () {
         _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT name, age, gender FROM "people.csv"'), {
-            outputColumns: [{
+            select: [{
                 type: 'namedExpression',
                 expression: {
                     type: 'identifier',
@@ -118,15 +118,15 @@ describe('parseQuery', function () {
                     string: 'gender',
                     value: 'gender' },
                 name: 'gender' }],
-            primaryTable: 'people.csv',
-            condition: null,
+            from: 'people.csv',
+            where: null,
             orderBy: null,
             limit: null,
             offset: null });
     });
 
     it('should parse queries with renamed columns', function () {
-        _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT a AS b FROM "c.csv"').outputColumns, [{
+        _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT a AS b FROM "c.csv"').select, [{
             type: 'namedExpression',
             expression: {
                 type: 'identifier',
@@ -136,7 +136,7 @@ describe('parseQuery', function () {
     });
 
     it('should parse queries with binary expressions', function () {
-        _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT a > b FROM "c.csv"').outputColumns, [{
+        _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT a > b FROM "c.csv"').select, [{
             type: 'namedExpression',
             expression: {
                 type: 'binaryExpression',
@@ -155,7 +155,7 @@ describe('parseQuery', function () {
 
     it('should allow binary expressions mixed with functions and AS names', function () {
         var sql = 'SELECT UPPERCASE(left) = UPPERCASE(right) AS match FROM "c.csv"';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).outputColumns, [{
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).select, [{
             type: 'namedExpression',
             expression: {
                 type: 'binaryExpression',
@@ -182,7 +182,7 @@ describe('parseQuery', function () {
 
     it('should support the AND operator', function () {
         var sql = 'SELECT a AND b FROM "c.csv"';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).outputColumns[0].expression, {
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).select[0].expression, {
             type: 'binaryExpression',
             operator: 'AND',
             left: {
@@ -198,7 +198,7 @@ describe('parseQuery', function () {
 
     it('should allow grouping expressions with parenthesis', function () {
         var sql = 'SELECT (a OR b) AND c FROM "d.csv"';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).outputColumns, [{
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).select, [{
             type: 'namedExpression',
             expression: {
                 type: 'binaryExpression',
@@ -237,7 +237,7 @@ describe('parseQuery', function () {
 
     it('should accept a WHERE clause', function () {
         var sql = 'SELECT a FROM "b.csv" WHERE a > 50';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).condition, {
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).where, {
             type: 'binaryExpression',
             operator: '>',
             left: {

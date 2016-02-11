@@ -20,30 +20,38 @@ function parseSubQuery(query) {
         .bind('select', outputColumns)
         .then(keyword('FROM'))
         .bind('from', tableName)
-        .bind('where', whereClause)
-        //.bind('groupBy', groupBy)
+        .bind('where', createConditionClause('WHERE'))
+        .map(parseGroupByHaving)
         .bind('orderBy', orderByClause)
         .bind('limit', limitClause)
         .bind('offset', offsetClause);
 }
 
-function whereClause(tokens) {
-    return parser(tokens).ifNextToken(isKeyword('WHERE'), curr =>
-        curr.then(keyword('WHERE')).just(expression)
-    );
+function parseGroupByHaving(parser) {
+    return parser
+        .ifNextToken(isKeyword('GROUP'), curr =>
+            curr.then(keyword('GROUP'))
+                .then(keyword('BY'))
+                .bind('groupBy', many(expression, {separator: comma}))
+                .bind('having', createConditionClause('HAVING'))
+        )
+        .mapNode(node => merge({groupBy: null, having: null}, node));
 }
 
-function groupBy(tokens) {
-    return parser(tokens);
+function createConditionClause(conditionType) {
+    return tokens => 
+        parser(tokens).ifNextToken(isKeyword(conditionType), curr =>
+            curr.then(keyword(conditionType))
+                .just(expression)
+        );
 }
 
 function orderByClause(tokens) {
-    return parser(tokens)
-        .ifNextToken(isKeyword('ORDER'), curr =>
-            curr.then(keyword('ORDER'))
-                .then(keyword('BY'))
-                .just(many(orderingTerm, {separator: comma}))
-        );
+    return parser(tokens).ifNextToken(isKeyword('ORDER'), curr =>
+        curr.then(keyword('ORDER'))
+            .then(keyword('BY'))
+            .just(many(orderingTerm, {separator: comma}))
+    );
 }
 
 function orderingTerm(tokens) {

@@ -54,7 +54,7 @@ function tokenize(query) {
 
 var BACKTICK = '`';
 
-var KEYWORDS = ['SELECT', 'FROM', 'WHERE', 'GROUP', 'BY', 'AS', 'ORDER', 'ASC', 'DESC', 'LIMIT', 'OFFSET', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+var KEYWORDS = ['SELECT', 'FROM', 'WHERE', 'GROUP', 'BY', 'HAVING', 'AS', 'ORDER', 'ASC', 'DESC', 'LIMIT', 'OFFSET', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'NOT', 'NULL', 'TRUE', 'FALSE'];
 
 var WORD_OPERATORS = ['AND', 'OR', 'IS', 'LIKE'];
 

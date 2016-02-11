@@ -92,7 +92,9 @@ describe('parseQuery', function () {
             select: '*',
             from: 'example.csv',
             where: null,
+            groupBy: null,
             orderBy: null,
+            having: null,
             limit: null,
             offset: null });
     });
@@ -120,6 +122,8 @@ describe('parseQuery', function () {
                 name: 'gender' }],
             from: 'people.csv',
             where: null,
+            groupBy: null,
+            having: null,
             orderBy: null,
             limit: null,
             offset: null });
@@ -249,6 +253,60 @@ describe('parseQuery', function () {
                 value: 50,
                 string: '50' },
             string: 'a > 50' });
+    });
+
+    it('should accept a basic GROUP BY clause', function () {
+        var sql = 'SELECT * FROM "a.csv" GROUP BY b';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).groupBy, [{
+            type: 'identifier',
+            string: 'b',
+            value: 'b' }]);
+    });
+
+    it('should accept a GROUP BY clause with multiple terms', function () {
+        var sql = 'SELECT * FROM "a.csv" GROUP BY LOWERCASE(b),c="xyz"';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).groupBy, [{
+            type: 'call',
+            functionName: 'LOWERCASE',
+            arguments: [{
+                type: 'identifier',
+                string: 'b',
+                value: 'b' }],
+            string: 'LOWERCASE(b)' }, {
+            type: 'binaryExpression',
+            operator: '=',
+            left: {
+                type: 'identifier',
+                string: 'c',
+                value: 'c' },
+            right: {
+                type: 'string',
+                string: '"xyz"',
+                value: 'xyz' },
+            string: 'c = "xyz"' }]);
+    });
+
+    it('should accept a HAVING clause', function () {
+        var sql = 'SELECT * FROM "a.csv" GROUP BY b HAVING c = 2';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).having, {
+            type: 'binaryExpression',
+            operator: '=',
+            left: {
+                type: 'identifier',
+                string: 'c',
+                value: 'c' },
+            right: {
+                type: 'number',
+                string: '2',
+                value: 2 },
+            string: 'c = 2' });
+    });
+
+    it('should reject a HAVING clause without a GROUP BY', function () {
+        var sql = 'SELECT * FROM "a.csv" HAVING b = 2';
+        _chai.assert.throws(function () {
+            return (0, _parser.parseQuery)(sql);
+        }, SyntaxError);
     });
 
     it('should accept a basic ORDER BY clause', function () {

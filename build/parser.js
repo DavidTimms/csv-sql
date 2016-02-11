@@ -31,19 +31,23 @@ function parseQuery(query) {
 function parseSubQuery(query) {
     var tokens = (0, _tokenizer.tokenize)(query);
 
-    return parser(tokens).then(keyword('SELECT')).bind('select', outputColumns).then(keyword('FROM')).bind('from', tableName).bind('where', whereClause)
-    //.bind('groupBy', groupBy)
-    .bind('orderBy', orderByClause).bind('limit', limitClause).bind('offset', offsetClause);
+    return parser(tokens).then(keyword('SELECT')).bind('select', outputColumns).then(keyword('FROM')).bind('from', tableName).bind('where', createConditionClause('WHERE')).map(parseGroupByHaving).bind('orderBy', orderByClause).bind('limit', limitClause).bind('offset', offsetClause);
 }
 
-function whereClause(tokens) {
-    return parser(tokens).ifNextToken(isKeyword('WHERE'), function (curr) {
-        return curr.then(keyword('WHERE')).just(expression);
+function parseGroupByHaving(parser) {
+    return parser.ifNextToken(isKeyword('GROUP'), function (curr) {
+        return curr.then(keyword('GROUP')).then(keyword('BY')).bind('groupBy', many(expression, { separator: comma })).bind('having', createConditionClause('HAVING'));
+    }).mapNode(function (node) {
+        return merge({ groupBy: null, having: null }, node);
     });
 }
 
-function groupBy(tokens) {
-    return parser(tokens);
+function createConditionClause(conditionType) {
+    return function (tokens) {
+        return parser(tokens).ifNextToken(isKeyword(conditionType), function (curr) {
+            return curr.then(keyword(conditionType)).just(expression);
+        });
+    };
 }
 
 function orderByClause(tokens) {

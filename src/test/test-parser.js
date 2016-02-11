@@ -171,7 +171,9 @@ describe('parseQuery', () => {
             select: '*',
             from: 'example.csv',
             where: null,
+            groupBy: null,
             orderBy: null,
+            having: null,
             limit: null,
             offset: null,
         });
@@ -210,6 +212,8 @@ describe('parseQuery', () => {
             ],
             from: 'people.csv',
             where: null,
+            groupBy: null,
+            having: null,
             orderBy: null,
             limit: null,
             offset: null,
@@ -373,6 +377,72 @@ describe('parseQuery', () => {
             },
             string: 'a > 50',
         });
+    });
+
+    it('should accept a basic GROUP BY clause', () => {
+        const sql = ('SELECT * FROM "a.csv" GROUP BY b');
+        assert.deepEqual(parseQuery(sql).groupBy, [
+            {
+                type: 'identifier',
+                string: 'b',
+                value: 'b',
+            },
+        ]);
+    });
+
+    it('should accept a GROUP BY clause with multiple terms', () => {
+        const sql = ('SELECT * FROM "a.csv" GROUP BY LOWERCASE(b),c="xyz"');
+        assert.deepEqual(parseQuery(sql).groupBy, [
+            {
+                type: 'call',
+                functionName: 'LOWERCASE',
+                arguments: [{
+                    type: 'identifier',
+                    string: 'b',
+                    value: 'b',
+                }],
+                string: 'LOWERCASE(b)',
+            },
+            {
+                type: 'binaryExpression',
+                operator: '=',
+                left: {
+                    type: 'identifier',
+                    string: 'c',
+                    value: 'c',
+                },
+                right: {
+                    type: 'string',
+                    string: '"xyz"',
+                    value: 'xyz',
+                },
+                string: 'c = "xyz"',
+            },
+        ]);
+    });
+
+    it('should accept a HAVING clause', () => {
+        const sql = ('SELECT * FROM "a.csv" GROUP BY b HAVING c = 2');
+        assert.deepEqual(parseQuery(sql).having, {
+           type: 'binaryExpression',
+            operator: '=',
+            left: {
+                type: 'identifier',
+                string: 'c',
+                value: 'c',
+            },
+            right: {
+                type: 'number',
+                string: '2',
+                value: 2,
+            },
+            string: 'c = 2',
+        });
+    });
+
+    it('should reject a HAVING clause without a GROUP BY', () => {
+        const sql = ('SELECT * FROM "a.csv" HAVING b = 2');
+        assert.throws(() => parseQuery(sql), SyntaxError);
     });
 
     it('should accept a basic ORDER BY clause', () => {

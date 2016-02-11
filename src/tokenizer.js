@@ -49,6 +49,7 @@ const KEYWORDS = [
     'WHERE',
     'GROUP',
     'BY',
+    'HAVING',
     'AS',
     'ORDER',
     'ASC',

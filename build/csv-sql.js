@@ -24,6 +24,8 @@ var _select = require('./select');
 
 var _where = require('./where');
 
+var _groupBy = require('./group-by');
+
 var _orderBy = require('./order-by');
 
 var _offset = require('./offset');
@@ -51,6 +53,10 @@ function performQuery(queryString) {
     }
 
     var resultStream = tableReadStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _where.performWhere)(query)));
+
+    if (query.groupBy) {
+        resultStream = resultStream.pipe(new _groupBy.GroupingStream(query));
+    }
 
     if (query.orderBy) {
         resultStream = resultStream.pipe(new _orderBy.OrderingStream(query));

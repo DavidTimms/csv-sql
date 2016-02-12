@@ -50,6 +50,7 @@ var OrderingStream = (function (_stream$Transform) {
                     return comparisionResult * directionModifiers[i];
                 }
             }
+            return SAME;
         };
     }
 

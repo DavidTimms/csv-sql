@@ -65,6 +65,11 @@ describe('performQuery', function () {
         return queryResultsEqual(queryString, ['name', 'Bob Jones', 'David Timms', 'Jenny Bloggs']);
     });
 
+    it('should support GROUP BY with no aggregate functions', function () {
+        var queryString = 'SELECT gender FROM "test/test.csv" GROUP BY gender';
+        return queryResultsEqual(queryString, ['gender', 'M', 'F']);
+    });
+
     it('should support numerical ORDER BY', function () {
         var queryString = 'SELECT number FROM "test/numbers.csv" ORDER BY number';
         return queryResultsEqual(queryString, ['number', '', '1', '2.25', '2.5', '5', '10', '10', '55', '100']);

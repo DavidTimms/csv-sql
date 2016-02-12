@@ -86,6 +86,15 @@ describe('performQuery', () => {
         ]);
     });
 
+    it('should support GROUP BY with no aggregate functions', () => {
+        const queryString = 'SELECT gender FROM "test/test.csv" GROUP BY gender';
+        return queryResultsEqual(queryString, [
+            'gender',
+            'M',
+            'F',
+        ]);
+    });
+
     it('should support numerical ORDER BY', () => {
         const queryString = 'SELECT number FROM "test/numbers.csv" ORDER BY number';
         return queryResultsEqual(queryString, [

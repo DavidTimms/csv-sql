@@ -5,6 +5,7 @@ import csv from 'csv';
 import {parseQuery} from './parser';
 import {performSelect} from './select';
 import {performWhere} from './where';
+import {GroupingStream} from './group-by';
 import {OrderingStream} from './order-by';
 import {performOffset} from './offset';
 import {performLimit} from './limit';
@@ -34,16 +35,20 @@ export function performQuery(queryString) {
 
     let resultStream = tableReadStream
         .pipe(csv.parse({columns: true}))
-        .pipe(csv.transform(performWhere(query)))
+        .pipe(csv.transform(performWhere(query)));
+
+    if (query.groupBy) {
+        resultStream = resultStream.pipe(new GroupingStream(query));
+    }
 
     if (query.orderBy) {
-        resultStream = resultStream.pipe(new OrderingStream(query))
+        resultStream = resultStream.pipe(new OrderingStream(query));
     }
 
     resultStream = resultStream
         .pipe(csv.transform(performOffset(query)))
         .pipe(csv.transform(performLimit(query, stopReading)))
-        .pipe(csv.transform(performSelect(query)))
+        .pipe(csv.transform(performSelect(query)));
 
     return resultStream;
 }

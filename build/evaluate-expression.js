@@ -6,6 +6,7 @@ Object.defineProperty(exports, '__esModule', {
 exports.evaluateExpression = evaluateExpression;
 exports.patternToRegExp = patternToRegExp;
 exports.isNull = isNull;
+exports.str = str;
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
 
@@ -16,7 +17,10 @@ function evaluateExpression(exp, context) {
         case 'literal':
             return exp.value;
         case 'identifier':
-            return context[exp.value];
+            if (context.hasOwnProperty(exp.value)) {
+                return context[exp.value];
+            }
+            throw ReferenceError('Column not found: ' + exp.string);
         case 'call':
             if (exp.functionName in functions) {
                 var argValues = exp.arguments.map(function (arg) {

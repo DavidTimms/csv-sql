@@ -6,7 +6,10 @@ export function evaluateExpression(exp, context) {
         case 'literal':
             return exp.value;
         case 'identifier':
-            return context[exp.value];
+            if (context.hasOwnProperty(exp.value)) {
+                return context[exp.value];
+            }
+            throw ReferenceError('Column not found: ' + exp.string);
         case 'call':
             if (exp.functionName in functions) {
                 const argValues = exp.arguments.map(
@@ -123,7 +126,7 @@ export function isNull(value) {
     return value === null || value === undefined || value === '';
 }
 
-function str(value) {
+export function str(value) {
     if (value === null || value === undefined) return '';
     else return String(value);
 }

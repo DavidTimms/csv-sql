@@ -28,6 +28,7 @@ export class OrderingStream extends stream.Transform {
                     return comparisionResult * directionModifiers[i];
                 }
             }
+            return SAME;
         }
     }
 

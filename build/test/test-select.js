@@ -75,10 +75,13 @@ describe('performQuery', function () {
         return queryResultsEqual(queryString, ['number', '', '1', '2.25', '2.5', '5', '10', '10', '55', '100']);
     });
 
-    it('should support ORDER BY with a direction', function () {
+    it('should support ORDER BY with a direction (ASC)', function () {
 
         var ascQueryString = 'SELECT name FROM "test/test.csv" ORDER BY name ASC';
         return queryResultsEqual(ascQueryString, ['name', 'Bob Jones', 'David Timms', 'Jenny Bloggs']);
+    });
+
+    it('should support ORDER BY with a direction (DESC)', function () {
 
         var descQueryString = 'SELECT name FROM "test/test.csv" ORDER BY name DESC';
         return queryResultsEqual(descQueryString, ['name', 'Jenny Bloggs', 'David Timms', 'Bob Jones']);
@@ -89,18 +92,24 @@ describe('performQuery', function () {
         return queryResultsEqual(queryString, ['name', 'Jenny Bloggs', 'Bob Jones', 'David Timms']);
     });
 
-    it('should support the LIKE operator', function () {
+    it('should support the LIKE operator for prefixes', function () {
         var prefixQuery = 'SELECT name FROM "test/test.csv" WHERE name LIKE "b%"';
         return queryResultsEqual(prefixQuery, ['name', 'Bob Jones']);
+    });
 
+    it('should support the LIKE operator for suffixes', function () {
         var suffixQuery = 'SELECT name FROM "test/test.csv" WHERE name LIKE "%ms"';
         return queryResultsEqual(suffixQuery, ['name', 'David Timms']);
+    });
 
+    it('should support the LIKE operator for substrings', function () {
         var containsQuery = 'SELECT name FROM "test/test.csv" WHERE name LIKE "%O%"';
-        return queryResultsEqual(suffixQuery, ['name', 'Jenny Bloggs', 'Bob Jones']);
+        return queryResultsEqual(containsQuery, ['name', 'Bob Jones', 'Jenny Bloggs']);
+    });
 
+    it('should support the LIKE operator with wildcard underscore patterns', function () {
         var fixedLengthQuery = 'SELECT name FROM "test/test.csv" WHERE name LIKE "J_n_y B____s"';
-        return queryResultsEqual(suffixQuery, ['name', 'Jenny Bloggs']);
+        return queryResultsEqual(fixedLengthQuery, ['name', 'Jenny Bloggs']);
     });
 });
 

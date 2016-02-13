@@ -35,13 +35,13 @@ function performBinaryOperation(operator, left, right) {
         case '<>':
             return str(left) !== str(right);
         case '>':
-            return +left > +right;
+            return Number(left) > Number(right);
         case '<':
-            return +left < +right;
+            return Number(left) < Number(right);
         case '>=':
-            return +left >= +right;
+            return Number(left) >= Number(right);
         case '<=':
-            return +left <= +right;
+            return Number(left) <= Number(right);
         // TODO make logical operators short-circuit
         case 'OR':
             return Boolean(left) || Boolean(right);
@@ -115,7 +115,7 @@ const functions = {
 
         while (chars.indexOf(s[startIndex]) >= 0 && s.length - startIndex > min) {
             startIndex++;
-        };
+        }
         return s.substring(startIndex);
     },
 };

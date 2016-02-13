@@ -101,6 +101,9 @@ function processRawToken(rest, token) {
         case 'string':
             [rest, token] = takeStringLiteral(token.string)(rest);
             break;
+
+        default:
+            // do nothing
     }
 
     return [rest, token];

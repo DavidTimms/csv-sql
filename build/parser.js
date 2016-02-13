@@ -96,14 +96,12 @@ function atom(_ref2) {
     }
     // literal TRUE, FALSE, or NULL
     else if (isType('keyword', first)) {
-        switch (first.string) {
-            case 'TRUE':
-            case 'FALSE':
-            case 'NULL':
-                return parser(rest, {
-                    type: 'literal',
-                    value: JSON.parse(first.string.toLowerCase()),
-                    string: first.string });
+        var s = first.string;
+        if (s === 'TRUE' || s === 'FALSE' || s === 'NULL') {
+            return parser(rest, {
+                type: 'literal',
+                value: JSON.parse(s.toLowerCase()),
+                string: s });
         }
     }
     // function call
@@ -171,7 +169,9 @@ function keyword(word) {
         var first = tokens[0];
         if (isKeyword(word, first)) {
             return parser(tokens.slice(1), word);
-        } else throw SyntaxError('Expected "' + word + '", found "' + (first.string || '(end of input)') + '"');
+        } else {
+            throw SyntaxError('Expected "' + word + '", found "' + (first.string || '(end of input)') + '"');
+        }
     };
 }
 
@@ -263,7 +263,7 @@ function many(parseFunc) {
         }
         return parser(rest, parts);
     };
-};
+}
 
 function throwUnexpected(token) {
     throw SyntaxError('Unexpected token: "' + token.string + '"');
@@ -318,16 +318,18 @@ function parser(rest) {
 }
 
 function merge(a, b) {
-    var merged = {};
-    if (a) for (var key in a) {
-        if (a.hasOwnProperty(key)) {
-            merged[key] = a[key];
+    return mergeInto(mergeInto({}, a), b);
+}
+
+function mergeInto(a, b) {
+    if (b) {
+        for (var key in b) {
+            if (b.hasOwnProperty(key)) {
+                a[key] = b[key];
+            }
         }
-    }if (b) for (var key in b) {
-        if (b.hasOwnProperty(key)) {
-            merged[key] = b[key];
-        }
-    }return merged;
+    }
+    return a;
 }
 
 function or(predicates) {

@@ -91,9 +91,9 @@ function compare(a, b) {
     if ((0, _evaluateExpression.isNull)(b)) return GREATER;
 
     // if both values can be coerced to numbers, do so
-    var numA = +a;
+    var numA = Number(a);
     if (!Number.isNaN(numA)) {
-        var numB = +b;
+        var numB = Number(b);
         if (!Number.isNaN(numB)) {
             a = numA;
             b = numB;

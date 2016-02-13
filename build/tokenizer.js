@@ -89,6 +89,9 @@ function processRawToken(rest, token) {
             token = _takeStringLiteral2[1];
 
             break;
+
+        default:
+        // do nothing
     }
 
     return [rest, token];

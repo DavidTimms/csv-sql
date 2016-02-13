@@ -60,9 +60,9 @@ function compare(a, b) {
     if (isNull(b)) return GREATER;
 
     // if both values can be coerced to numbers, do so
-    const numA = +a;
+    const numA = Number(a);
     if (!Number.isNaN(numA)) {
-        const numB = +b;
+        const numB = Number(b);
         if (!Number.isNaN(numB)) {
             a = numA;
             b = numB;

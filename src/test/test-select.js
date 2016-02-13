@@ -111,7 +111,7 @@ describe('performQuery', () => {
         ]);
     });
 
-    it('should support ORDER BY with a direction', () => {
+    it('should support ORDER BY with a direction (ASC)', () => {
 
         const ascQueryString = 'SELECT name FROM "test/test.csv" ORDER BY name ASC';
         return queryResultsEqual(ascQueryString, [
@@ -120,6 +120,9 @@ describe('performQuery', () => {
             'David Timms',
             'Jenny Bloggs',
         ]);
+    });
+
+    it('should support ORDER BY with a direction (DESC)', () => {
 
         const descQueryString = 'SELECT name FROM "test/test.csv" ORDER BY name DESC';
         return queryResultsEqual(descQueryString, [
@@ -140,29 +143,35 @@ describe('performQuery', () => {
         ]);
     });
 
-    it('should support the LIKE operator', () => {
+    it('should support the LIKE operator for prefixes', () => {
         const prefixQuery = 'SELECT name FROM "test/test.csv" WHERE name LIKE "b%"';
         return queryResultsEqual(prefixQuery, [
             'name',
             'Bob Jones',
         ]);
+    });
 
+    it('should support the LIKE operator for suffixes', () => {
         const suffixQuery = 'SELECT name FROM "test/test.csv" WHERE name LIKE "%ms"';
         return queryResultsEqual(suffixQuery, [
             'name',
             'David Timms',
         ]);
+    });
 
+    it('should support the LIKE operator for substrings', () => {
         const containsQuery = 'SELECT name FROM "test/test.csv" WHERE name LIKE "%O%"';
-        return queryResultsEqual(suffixQuery, [
+        return queryResultsEqual(containsQuery, [
             'name',
-            'Jenny Bloggs',
             'Bob Jones',
+            'Jenny Bloggs',
         ]);
+    });
 
+    it('should support the LIKE operator with wildcard underscore patterns', () => {
         const fixedLengthQuery = 
             'SELECT name FROM "test/test.csv" WHERE name LIKE "J_n_y B____s"';
-        return queryResultsEqual(suffixQuery, [
+        return queryResultsEqual(fixedLengthQuery, [
             'name',
             'Jenny Bloggs',
         ]);

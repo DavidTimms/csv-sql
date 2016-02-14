@@ -1,3 +1,4 @@
+import {merge} from './utils';
 import {tokenize} from './tokenizer';
 
 export function parseQuery(query) {
@@ -276,23 +277,4 @@ function parser(rest, node=null) {
             return func(this);
         },
     };
-}
-
-function merge(a, b) {
-    return mergeInto(mergeInto({}, a), b);
-}
-
-function mergeInto(a, b) {
-    if (b) {
-        for (let key in b) {
-            if (b.hasOwnProperty(key)) {
-                a[key] = b[key];
-            }
-        }
-    }
-    return a;
-}
-
-function or(predicates) {
-    return (...args) => predicates.some(predicate => predicate(...args));
 }

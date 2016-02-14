@@ -95,6 +95,14 @@ describe('performQuery', () => {
         ]);
     });
 
+    it('should support COUNT aggregate function without GROUP BY', () => {
+        const queryString = 'SELECT COUNT(name) FROM "test/test.csv"';
+        return queryResultsEqual(queryString, [
+            'COUNT(name)',
+            '3',
+        ]);
+    });
+
     it('should support numerical ORDER BY', () => {
         const queryString = 'SELECT number FROM "test/numbers.csv" ORDER BY number';
         return queryResultsEqual(queryString, [

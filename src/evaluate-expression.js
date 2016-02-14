@@ -11,7 +11,7 @@ export function evaluateExpression(exp, context) {
             }
             throw ReferenceError('Column not found: ' + exp.string);
         case 'call':
-            if (exp.functionName in functions) {
+            if (functions.hasOwnProperty(exp.functionName)) {
                 const argValues = exp.arguments.map(
                     arg => evaluateExpression(arg, context));
                 return functions[exp.functionName](...argValues);
@@ -73,6 +73,15 @@ export function patternToRegExp(pattern) {
     return patternRegExpCache[pattern];
 }
 
+export function isNull(value) {
+    return value === null || value === undefined || value === '';
+}
+
+export function str(value) {
+    if (value === null || value === undefined) return '';
+    else return String(value);
+}
+
 const functions = {
     UPPERCASE(s) {
         return s === null && s === undefined ? null : String(s).toUpperCase();
@@ -121,12 +130,3 @@ const functions = {
 };
 
 functions.IFNULL = functions.COALESCE;
-
-export function isNull(value) {
-    return value === null || value === undefined || value === '';
-}
-
-export function str(value) {
-    if (value === null || value === undefined) return '';
-    else return String(value);
-}

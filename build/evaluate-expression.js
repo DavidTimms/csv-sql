@@ -22,7 +22,7 @@ function evaluateExpression(exp, context) {
             }
             throw ReferenceError('Column not found: ' + exp.string);
         case 'call':
-            if (exp.functionName in functions) {
+            if (functions.hasOwnProperty(exp.functionName)) {
                 var argValues = exp.arguments.map(function (arg) {
                     return evaluateExpression(arg, context);
                 });
@@ -81,6 +81,14 @@ function patternToRegExp(pattern) {
     return patternRegExpCache[pattern];
 }
 
+function isNull(value) {
+    return value === null || value === undefined || value === '';
+}
+
+function str(value) {
+    if (value === null || value === undefined) return '';else return String(value);
+}
+
 var functions = {
     UPPERCASE: function UPPERCASE(s) {
         return s === null && s === undefined ? null : String(s).toUpperCase();
@@ -134,11 +142,3 @@ var functions = {
     } };
 
 functions.IFNULL = functions.COALESCE;
-
-function isNull(value) {
-    return value === null || value === undefined || value === '';
-}
-
-function str(value) {
-    if (value === null || value === undefined) return '';else return String(value);
-}

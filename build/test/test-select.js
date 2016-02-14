@@ -70,6 +70,11 @@ describe('performQuery', function () {
         return queryResultsEqual(queryString, ['gender', 'M', 'F']);
     });
 
+    it('should support COUNT aggregate function without GROUP BY', function () {
+        var queryString = 'SELECT COUNT(name) FROM "test/test.csv"';
+        return queryResultsEqual(queryString, ['COUNT(name)', '3']);
+    });
+
     it('should support numerical ORDER BY', function () {
         var queryString = 'SELECT number FROM "test/numbers.csv" ORDER BY number';
         return queryResultsEqual(queryString, ['number', '', '1', '2.25', '2.5', '5', '10', '10', '55', '100']);

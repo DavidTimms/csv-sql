@@ -9,6 +9,8 @@ function _toArray(arr) { return Array.isArray(arr) ? arr : Array.from(arr); }
 
 function _defineProperty(obj, key, value) { return Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); }
 
+var _utils = require('./utils');
+
 var _tokenizer = require('./tokenizer');
 
 function parseQuery(query) {
@@ -38,7 +40,7 @@ function parseGroupByHaving(parser) {
     return parser.ifNextToken(isKeyword('GROUP'), function (curr) {
         return curr.then(keyword('GROUP')).then(keyword('BY')).bind('groupBy', many(expression, { separator: comma })).bind('having', createConditionClause('HAVING'));
     }).mapNode(function (node) {
-        return merge({ groupBy: null, having: null }, node);
+        return (0, _utils.merge)({ groupBy: null, having: null }, node);
     });
 }
 
@@ -288,7 +290,7 @@ function parser(rest) {
             var rest = _parseFunc2.rest;
             var node = _parseFunc2.node;
 
-            return parser(rest, merge(this.node, _defineProperty({}, key, node)));
+            return parser(rest, (0, _utils.merge)(this.node, _defineProperty({}, key, node)));
         },
         just: function just(parseFunc) {
             return parseFunc(this.rest);
@@ -315,31 +317,4 @@ function parser(rest) {
         map: function map(func) {
             return func(this);
         } };
-}
-
-function merge(a, b) {
-    return mergeInto(mergeInto({}, a), b);
-}
-
-function mergeInto(a, b) {
-    if (b) {
-        for (var key in b) {
-            if (b.hasOwnProperty(key)) {
-                a[key] = b[key];
-            }
-        }
-    }
-    return a;
-}
-
-function or(predicates) {
-    return function () {
-        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-            args[_key] = arguments[_key];
-        }
-
-        return predicates.some(function (predicate) {
-            return predicate.apply(undefined, args);
-        });
-    };
 }

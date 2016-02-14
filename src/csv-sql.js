@@ -5,14 +5,14 @@ import csv from 'csv';
 import {parseQuery} from './parser';
 import {performSelect} from './select';
 import {performWhere} from './where';
-import {GroupingStream} from './group-by';
+import {GroupingStream, identifyAggregatesInQuery} from './group-by';
 import {OrderingStream} from './order-by';
 import {performOffset} from './offset';
 import {performLimit} from './limit';
 
 export function performQuery(queryString) {
-    const query = parseQuery(queryString);
-    //console.log(JSON.stringify(query, null, 4));
+    const query = identifyAggregatesInQuery(parseQuery(queryString));
+    console.log(JSON.stringify(query, null, 4));
 
     const filePath = query.from;
 

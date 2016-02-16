@@ -12,7 +12,7 @@ import {performLimit} from './limit';
 
 export function performQuery(queryString) {
     const query = identifyAggregatesInQuery(parseQuery(queryString));
-    console.log(JSON.stringify(query, null, 4));
+    //console.log(JSON.stringify(query, null, 4));
 
     const filePath = query.from;
 

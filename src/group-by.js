@@ -90,6 +90,7 @@ export function identifyAggregatesInQuery(query) {
     const select = query.select;
     const orderBy = query.orderBy;
     const having = query.having;
+    const aggregates = [];
 
     return merge(query, {select, orderBy, having, aggregates});
 }

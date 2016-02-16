@@ -1,3 +1,5 @@
+import * as ast from './ast';
+
 
 const tokenTypes = {
     identifier: /^[a-z_]\w*/i,
@@ -27,7 +29,7 @@ export function tokenize(query) {
         for (let tokenType in tokenTypes) {
             const match = rest.match(tokenTypes[tokenType]);
             if (match) {
-                let token = {type: tokenType, string: match[0]};
+                let token = {type: tokenType, string: match[0], value: match[0]};
 
                 [rest, token] = processRawToken(rest.slice(match[0].length), token);
 
@@ -82,20 +84,18 @@ function processRawToken(rest, token) {
     switch (token.type) {
         case 'identifier':
             if (keywordRegex.test(token.string)) {
-                token.type = 'keyword';
-                token.string = token.string.toUpperCase();
+                token = ast.keyword(token.string);
             }
             else if (operatorRegex.test(token.string)) {
-                token.type = 'operator';
-                token.string = token.string.toUpperCase();
+                token = ast.operator(token.string);
             }
             else {
-                token.value = token.string;
+                token = ast.identifier(token.string);
             }
             break;
 
         case 'number':
-            token.value = Number(token.string);
+            token = ast.number(token.string);
             break;
 
         case 'string':
@@ -123,7 +123,8 @@ function takeStringLiteral(delimiter) {
                 switch (char) {
 
                     case delimiter:
-                    const rest = input.slice(index + 1);
+                        // TODO convert to using ast token constructor
+                        const rest = input.slice(index + 1);
                         const token = {
                             type: delimiter === BACKTICK ? 'identifier' : 'string',
                             string: delimiter + input.slice(0, index + 1),

@@ -137,6 +137,7 @@ function identifyAggregatesInQuery(query) {
     var select = query.select;
     var orderBy = query.orderBy;
     var having = query.having;
+    var aggregates = [];
 
     return (0, _utils.merge)(query, { select: select, orderBy: orderBy, having: having, aggregates: aggregates });
 }

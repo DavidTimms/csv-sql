@@ -1,5 +1,7 @@
 import {merge} from './utils';
 import {tokenize} from './tokenizer';
+import * as ast from './ast';
+
 
 export function parseQuery(query) {
     const {node, rest} = parseSubQuery(query).ifNextToken(isType('semicolon'), curr => 
@@ -88,22 +90,17 @@ function atom([first, ...rest]) {
     else if (isType('keyword', first)) {
         const s = first.string;
         if (s === 'TRUE' || s === 'FALSE' || s === 'NULL') {
-            return parser(rest, {
-                type: 'literal',
-                value: JSON.parse(s.toLowerCase()),
-                string: s,
-            });
+            return parser(rest, ast.literal(JSON.parse(s.toLowerCase())));
         }
     }
     // function call
     else if (isType('identifier', first) && isType('parOpen', rest[0])) {
-        return parser(rest.slice(1), {type: 'call', functionName: first.value.toUpperCase()})
+        const functionName = first.value;
+
+        return parser(rest.slice(1))
             .bind('arguments', many(expression, {separator: comma, min: 0}))
             .then(parClose)
-            .mapNode(node => {
-                const argsString = node.arguments.map(arg => arg.string).join(', ');
-                node.string = `${node.functionName}(${argsString})`;
-            });
+            .mapNode(node => ast.call(functionName, node.arguments))
     }
     // identifier, number, or string
     else if (isType(['identifier', 'number', 'string'], first)) {
@@ -116,24 +113,13 @@ function atom([first, ...rest]) {
 
 function expression(tokens) {
     return atom(tokens).ifNextToken(isType('operator'), curr => 
-        curr.mapNode(left => ({type: 'binaryExpression', left}))
+        curr.mapNode(left => ({left}))
             .bind('operator', operator)
             .bind('right', expression)
-            .mapNode(node => {
-                const leftString = parenWrappedBinaryExpString(node.left);
-                const rightString = parenWrappedBinaryExpString(node.right);
-                node.string = `${leftString} ${node.operator} ${rightString}`;
-            })
+            .mapNode(node => ast.binaryExpression(node.operator, node.left, node.right))
     );
 }
-
-function parenWrappedBinaryExpString(exp) {
-    if (exp.type === 'binaryExpression') {
-        return `(${exp.string})`;
-    }
-    else return exp.string;
-}
-
+/*
 function namedExpression(tokens) {
     const {node: exp, rest} = expression(tokens);
 
@@ -151,6 +137,18 @@ function namedExpression(tokens) {
             });
     }
     else return parser(rest, node);
+}
+*/
+function namedExpression(tokens) {
+    return expression(tokens)
+        .mapNode(expression => ({expression}))
+        .ifNextToken(isKeyword('AS'), curr =>
+            curr.then(keyword('AS'))
+                .bind('name', atom)
+        )
+        .mapNode(({expression, name}) => {
+            return ast.namedExpression(expression, name ? name.value : null)
+        });
 }
 
 function outputColumns(tokens) {
@@ -182,12 +180,10 @@ const semicolon = parseTokenType('semicolon');
 const parOpen = parseTokenType('parOpen', {expected: 'an opening parenthesis'});
 const parClose = parseTokenType('parClose', {expected: 'a closing parenthesis'});
 
-function parseTokenType(typeName, {expected}={}) {
-    expected = expected || 'a ' + typeName;
-
+function parseTokenType(typeName, {expected}={expected: 'a ' + typeName}) {
     return ([first, ...rest]) => {
         if (isType(typeName, first)) {
-            return parser(rest, first.value || first.string);
+            return parser(rest, first.value);
         }
         const found = first && first.string || '(end of input)';
         throw SyntaxError(`Expected ${expected}, found "${found}"`);

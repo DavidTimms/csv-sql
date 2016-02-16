@@ -34,7 +34,7 @@ var _limit = require('./limit');
 
 function performQuery(queryString) {
     var query = (0, _groupBy.identifyAggregatesInQuery)((0, _parser.parseQuery)(queryString));
-    console.log(JSON.stringify(query, null, 4));
+    //console.log(JSON.stringify(query, null, 4));
 
     var filePath = query.from;
 

@@ -5,7 +5,13 @@ Object.defineProperty(exports, '__esModule', {
 });
 exports.tokenize = tokenize;
 
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
+
 function _slicedToArray(arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }
+
+var _ast = require('./ast');
+
+var ast = _interopRequireWildcard(_ast);
 
 var tokenTypes = {
     identifier: /^[a-z_]\w*/i,
@@ -33,7 +39,7 @@ function tokenize(query) {
         for (var tokenType in tokenTypes) {
             var match = rest.match(tokenTypes[tokenType]);
             if (match) {
-                var _token = { type: tokenType, string: match[0] };
+                var _token = { type: tokenType, string: match[0], value: match[0] };
 
                 var _processRawToken = processRawToken(rest.slice(match[0].length), _token);
 
@@ -66,18 +72,16 @@ function processRawToken(rest, token) {
     switch (token.type) {
         case 'identifier':
             if (keywordRegex.test(token.string)) {
-                token.type = 'keyword';
-                token.string = token.string.toUpperCase();
+                token = ast.keyword(token.string);
             } else if (operatorRegex.test(token.string)) {
-                token.type = 'operator';
-                token.string = token.string.toUpperCase();
+                token = ast.operator(token.string);
             } else {
-                token.value = token.string;
+                token = ast.identifier(token.string);
             }
             break;
 
         case 'number':
-            token.value = Number(token.string);
+            token = ast.number(token.string);
             break;
 
         case 'string':
@@ -122,6 +126,7 @@ function takeStringLiteral(delimiter) {
                     switch (char) {
 
                         case delimiter:
+                            // TODO convert to using ast token constructor
                             var rest = input.slice(index + 1);
                             var token = {
                                 type: delimiter === BACKTICK ? 'identifier' : 'string',

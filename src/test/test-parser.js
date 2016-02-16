@@ -1,5 +1,6 @@
 
 import {assert} from 'chai';
+import * as ast from '../ast';
 import {tokenize} from '../tokenizer';
 import {parseQuery, parseSubQuery} from '../parser';
 
@@ -9,13 +10,13 @@ describe('tokenize', () => {
         const tokens = tokenize('SELECT from    where group   by aS LIMit');
 
         assert.deepEqual(tokens, [
-            {type: 'keyword', string: 'SELECT'},
-            {type: 'keyword', string: 'FROM'},
-            {type: 'keyword', string: 'WHERE'},
-            {type: 'keyword', string: 'GROUP'},
-            {type: 'keyword', string: 'BY'},
-            {type: 'keyword', string: 'AS'},
-            {type: 'keyword', string: 'LIMIT'},
+            ast.keyword('SELECT'),
+            ast.keyword('FROM'),
+            ast.keyword('WHERE'),
+            ast.keyword('GROUP'),
+            ast.keyword('BY'),
+            ast.keyword('AS'),
+            ast.keyword('LIMIT'),
         ]);
     });
 
@@ -23,12 +24,12 @@ describe('tokenize', () => {
         const tokens = tokenize('SELECTED hello Dog a _underscored\nmulti_word_thing');
 
         assert.deepEqual(tokens, [
-            {type: 'identifier', string: 'SELECTED', value: 'SELECTED'},
-            {type: 'identifier', string: 'hello', value: 'hello'},
-            {type: 'identifier', string: 'Dog', value: 'Dog'},
-            {type: 'identifier', string: 'a', value: 'a'},
-            {type: 'identifier', string: '_underscored', value: '_underscored'},
-            {type: 'identifier', string: 'multi_word_thing', value: 'multi_word_thing'},
+            ast.identifier('SELECTED'),
+            ast.identifier('hello'),
+            ast.identifier('Dog'),
+            ast.identifier('a'),
+            ast.identifier('_underscored'),
+            ast.identifier('multi_word_thing'),
         ]);
     });
 
@@ -36,16 +37,8 @@ describe('tokenize', () => {
         const tokens = tokenize('`This is a literal identifier`` 1 2 \\` 3 `');
 
         assert.deepEqual(tokens, [
-            {
-                type: 'identifier',
-                string: '`This is a literal identifier`',
-                value: 'This is a literal identifier',
-            },
-            {
-                type: 'identifier',
-                string: '` 1 2 \\` 3 `',
-                value: ' 1 2 ` 3 ',
-            },
+            ast.identifier('This is a literal identifier'),
+            ast.identifier(' 1 2 ` 3 '),
         ]);
     });
 
@@ -53,11 +46,11 @@ describe('tokenize', () => {
         const tokens = tokenize('  3 56.3 3.141592 9832 293829047240 ');
 
         assert.deepEqual(tokens, [
-            {type: 'number', string: '3', value: 3},
-            {type: 'number', string: '56.3', value: 56.3},
-            {type: 'number', string: '3.141592', value: 3.141592},
-            {type: 'number', string: '9832', value: 9832},
-            {type: 'number', string: '293829047240', value: 293829047240},
+            ast.number(3),
+            ast.number(56.3),
+            ast.number(3.141592),
+            ast.number(9832),
+            ast.number(293829047240),
         ]);
     });
 
@@ -82,9 +75,9 @@ describe('tokenize', () => {
         const tokens = tokenize(`="foo",'bar'`);
 
         assert.deepEqual(tokens, [
-            {type: 'operator', string: '='},
+            ast.operator('='),
             {type: 'string', string: '"foo"', value: 'foo'},
-            {type: 'comma', string: ','},
+            ast.comma(),
             {type: 'string', string: '\'bar\'', value: 'bar'},
         ]);
     });
@@ -93,13 +86,13 @@ describe('tokenize', () => {
         const tokens = tokenize('() (((     ))');
 
         assert.deepEqual(tokens, [
-            {type: 'parOpen', string: '('},
-            {type: 'parClose', string: ')'},
-            {type: 'parOpen', string: '('},
-            {type: 'parOpen', string: '('},
-            {type: 'parOpen', string: '('},
-            {type: 'parClose', string: ')'},
-            {type: 'parClose', string: ')'},
+            ast.parOpen(),
+            ast.parClose(),
+            ast.parOpen(),
+            ast.parOpen(),
+            ast.parOpen(),
+            ast.parClose(),
+            ast.parClose(),
         ]);
     });
 
@@ -107,12 +100,12 @@ describe('tokenize', () => {
         const tokens = tokenize('* (*) **');
 
         assert.deepEqual(tokens, [
-            {type: 'star', string: '*'},
-            {type: 'parOpen', string: '('},
-            {type: 'star', string: '*'},
-            {type: 'parClose', string: ')'},
-            {type: 'star', string: '*'},
-            {type: 'star', string: '*'},
+            ast.star(),
+            ast.parOpen(),
+            ast.star(),
+            ast.parClose(),
+            ast.star(),
+            ast.star(),
         ]);
     });
 
@@ -120,31 +113,15 @@ describe('tokenize', () => {
         const tokens = tokenize(', so, many,,, commas,');
 
         assert.deepEqual(tokens, [
-            {type: 'comma', string: ','},
-            {type: 'identifier', string: 'so', value: 'so'},
-            {type: 'comma', string: ','},
-            {type: 'identifier', string: 'many', value: 'many'},
-            {type: 'comma', string: ','},
-            {type: 'comma', string: ','},
-            {type: 'comma', string: ','},
-            {type: 'identifier', string: 'commas', value: 'commas'},
-            {type: 'comma', string: ','},
-        ]);
-    });
-
-    it('should detect commas', () => {
-        const tokens = tokenize(', so, many,,, commas,');
-
-        assert.deepEqual(tokens, [
-            {type: 'comma', string: ','},
-            {type: 'identifier', string: 'so', value: 'so'},
-            {type: 'comma', string: ','},
-            {type: 'identifier', string: 'many', value: 'many'},
-            {type: 'comma', string: ','},
-            {type: 'comma', string: ','},
-            {type: 'comma', string: ','},
-            {type: 'identifier', string: 'commas', value: 'commas'},
-            {type: 'comma', string: ','},
+            ast.comma(),
+            ast.identifier('so'),
+            ast.comma(),
+            ast.identifier('many'),
+            ast.comma(),
+            ast.comma(),
+            ast.comma(),
+            ast.identifier('commas'),
+            ast.comma(),
         ]);
     });
 
@@ -152,14 +129,14 @@ describe('tokenize', () => {
         const tokens = tokenize('== <= >=!=<> < >');
 
         assert.deepEqual(tokens, [
-            {type: 'operator', string: '='},
-            {type: 'operator', string: '='},
-            {type: 'operator', string: '<='},
-            {type: 'operator', string: '>='},
-            {type: 'operator', string: '!='},
-            {type: 'operator', string: '<>'},
-            {type: 'operator', string: '<'},
-            {type: 'operator', string: '>'},
+            ast.operator('='),
+            ast.operator('='),
+            ast.operator('<='),
+            ast.operator('>='),
+            ast.operator('!='),
+            ast.operator('<>'),
+            ast.operator('<'),
+            ast.operator('>'),
         ]);
     });
 });
@@ -182,33 +159,9 @@ describe('parseQuery', () => {
     it('should parse queries with an output column list', () => {
         assert.deepEqual(parseQuery('SELECT name, age, gender FROM "people.csv"'), {
             select: [
-                {
-                    type: 'namedExpression',
-                    expression: {
-                        type: 'identifier',
-                        string: 'name',
-                        value: 'name',
-                    },
-                    name: 'name',
-                },
-                {
-                    type: 'namedExpression',
-                    expression: {
-                        type: 'identifier',
-                        string: 'age',
-                        value: 'age',
-                    },
-                    name: 'age',
-                },
-                {
-                    type: 'namedExpression',
-                    expression: {
-                        type: 'identifier',
-                        string: 'gender',
-                        value: 'gender',
-                    },
-                    name: 'gender',
-                },
+                ast.namedExpression(ast.identifier('name')),
+                ast.namedExpression(ast.identifier('age')),
+                ast.namedExpression(ast.identifier('gender')),
             ],
             from: 'people.csv',
             where: null,
@@ -222,39 +175,19 @@ describe('parseQuery', () => {
     
     it('should parse queries with renamed columns', () => {
         assert.deepEqual(parseQuery('SELECT a AS b FROM "c.csv"').select, [
-            {
-                type: 'namedExpression',
-                expression: {
-                    type: 'identifier',
-                    string: 'a',
-                    value: 'a',
-                },
-                name: 'b',
-            },
+            ast.namedExpression(ast.identifier('a'), 'b'),
         ]);
     });
     
     it('should parse queries with binary expressions', () => {
         assert.deepEqual(parseQuery('SELECT a > b FROM "c.csv"').select, [
-            {
-                type: 'namedExpression',
-                expression: {
-                    type: 'binaryExpression',
-                    operator: '>',
-                    left: {
-                        type: 'identifier',
-                        string: 'a',
-                        value: 'a',
-                    },
-                    right: {
-                        type: 'identifier',
-                        string: 'b',
-                        value: 'b',
-                    },
-                    string: 'a > b',
-                },
-                name: 'a > b',
-            },
+            ast.namedExpression(
+                ast.binaryExpression(
+                    '>',
+                    ast.identifier('a'),
+                    ast.identifier('b')
+                )
+            ),
         ]);
     });
     
@@ -296,21 +229,15 @@ describe('parseQuery', () => {
 
     it('should support the AND operator', () => {
         const sql = ('SELECT a AND b FROM "c.csv"');
-        assert.deepEqual(parseQuery(sql).select[0].expression, {
-            type: 'binaryExpression',
-            operator: 'AND',
-            left: {
-                type: 'identifier',
-                string: 'a',
-                value: 'a',
-            },
-            right: {
-                type: 'identifier',
-                string: 'b',
-                value: 'b',
-            },
-            string: 'a AND b',
-        });
+        assert.deepEqual(parseQuery(sql).select, [
+            ast.namedExpression(
+                ast.binaryExpression(
+                    'AND',
+                    ast.identifier('a'),
+                    ast.identifier('b')
+                )
+            )
+        ]);
     });
 
     it('should allow grouping expressions with parenthesis', () => {

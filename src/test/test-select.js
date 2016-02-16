@@ -95,7 +95,7 @@ describe('performQuery', () => {
         ]);
     });
 
-    it('should support COUNT aggregate function without GROUP BY', () => {
+    it('should support COUNT aggregate function without GROUP BY'); (() => {
         const queryString = 'SELECT COUNT(name) FROM "test/test.csv"';
         return queryResultsEqual(queryString, [
             'COUNT(name)',

@@ -5,6 +5,8 @@ Object.defineProperty(exports, '__esModule', {
 });
 exports.parseQuery = parseQuery;
 
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
+
 function _toArray(arr) { return Array.isArray(arr) ? arr : Array.from(arr); }
 
 function _defineProperty(obj, key, value) { return Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); }
@@ -12,6 +14,10 @@ function _defineProperty(obj, key, value) { return Object.defineProperty(obj, ke
 var _utils = require('./utils');
 
 var _tokenizer = require('./tokenizer');
+
+var _ast = require('./ast');
+
+var ast = _interopRequireWildcard(_ast);
 
 function parseQuery(query) {
     var _parseSubQuery$ifNextToken = parseSubQuery(query).ifNextToken(isType('semicolon'), function (curr) {
@@ -100,20 +106,22 @@ function atom(_ref2) {
     else if (isType('keyword', first)) {
         var s = first.string;
         if (s === 'TRUE' || s === 'FALSE' || s === 'NULL') {
-            return parser(rest, {
-                type: 'literal',
-                value: JSON.parse(s.toLowerCase()),
-                string: s });
+            return parser(rest, ast.literal(JSON.parse(s.toLowerCase())));
         }
     }
     // function call
     else if (isType('identifier', first) && isType('parOpen', rest[0])) {
-        return parser(rest.slice(1), { type: 'call', functionName: first.value.toUpperCase() }).bind('arguments', many(expression, { separator: comma, min: 0 })).then(parClose).mapNode(function (node) {
-            var argsString = node.arguments.map(function (arg) {
-                return arg.string;
-            }).join(', ');
-            node.string = '' + node.functionName + '(' + argsString + ')';
-        });
+        var _ret = (function () {
+            var functionName = first.value;
+
+            return {
+                v: parser(rest.slice(1)).bind('arguments', many(expression, { separator: comma, min: 0 })).then(parClose).mapNode(function (node) {
+                    return ast.call(functionName, node.arguments);
+                })
+            };
+        })();
+
+        if (typeof _ret === 'object') return _ret.v;
     }
     // identifier, number, or string
     else if (isType(['identifier', 'number', 'string'], first)) {
@@ -126,37 +134,43 @@ function atom(_ref2) {
 function expression(tokens) {
     return atom(tokens).ifNextToken(isType('operator'), function (curr) {
         return curr.mapNode(function (left) {
-            return { type: 'binaryExpression', left: left };
+            return { left: left };
         }).bind('operator', operator).bind('right', expression).mapNode(function (node) {
-            var leftString = parenWrappedBinaryExpString(node.left);
-            var rightString = parenWrappedBinaryExpString(node.right);
-            node.string = '' + leftString + ' ' + node.operator + ' ' + rightString;
+            return ast.binaryExpression(node.operator, node.left, node.right);
         });
     });
 }
-
-function parenWrappedBinaryExpString(exp) {
-    if (exp.type === 'binaryExpression') {
-        return '(' + exp.string + ')';
-    } else return exp.string;
-}
-
+/*
 function namedExpression(tokens) {
-    var _expression = expression(tokens);
+    const {node: exp, rest} = expression(tokens);
 
-    var exp = _expression.node;
-    var rest = _expression.rest;
-
-    var node = {
+    const node = {
         type: 'namedExpression',
         expression: exp,
-        name: exp.string };
+        name: exp.string,
+    };
 
     if (isKeyword('AS', rest[0])) {
-        return parser(rest.slice(1), node).bind('name', atom).mapNode(function (node) {
-            node.name = node.name.value;
-        });
-    } else return parser(rest, node);
+        return parser(rest.slice(1), node)
+            .bind('name', atom)
+            .mapNode(node => {
+                node.name = node.name.value;
+            });
+    }
+    else return parser(rest, node);
+}
+*/
+function namedExpression(tokens) {
+    return expression(tokens).mapNode(function (expression) {
+        return { expression: expression };
+    }).ifNextToken(isKeyword('AS'), function (curr) {
+        return curr.then(keyword('AS')).bind('name', atom);
+    }).mapNode(function (_ref3) {
+        var expression = _ref3.expression;
+        var name = _ref3.name;
+
+        return ast.namedExpression(expression, name ? name.value : null);
+    });
 }
 
 function outputColumns(tokens) {
@@ -187,25 +201,24 @@ var parOpen = parseTokenType('parOpen', { expected: 'an opening parenthesis' });
 var parClose = parseTokenType('parClose', { expected: 'a closing parenthesis' });
 
 function parseTokenType(typeName) {
-    var _ref3 = arguments[1] === undefined ? {} : arguments[1];
+    var _ref4 = arguments[1] === undefined ? { expected: 'a ' + typeName } : arguments[1];
 
-    var expected = _ref3.expected;
+    var expected = _ref4.expected;
+    return (function () {
+        return function (_ref5) {
+            var _ref52 = _toArray(_ref5);
 
-    expected = expected || 'a ' + typeName;
+            var first = _ref52[0];
 
-    return function (_ref4) {
-        var _ref42 = _toArray(_ref4);
+            var rest = _ref52.slice(1);
 
-        var first = _ref42[0];
-
-        var rest = _ref42.slice(1);
-
-        if (isType(typeName, first)) {
-            return parser(rest, first.value || first.string);
-        }
-        var found = first && first.string || '(end of input)';
-        throw SyntaxError('Expected ' + expected + ', found "' + found + '"');
-    };
+            if (isType(typeName, first)) {
+                return parser(rest, first.value);
+            }
+            var found = first && first.string || '(end of input)';
+            throw SyntaxError('Expected ' + expected + ', found "' + found + '"');
+        };
+    })();
 }
 
 function isKeyword(keyword, token) {
@@ -230,10 +243,10 @@ function isType(types, token) {
 }
 
 function many(parseFunc) {
-    var _ref5 = arguments[1] === undefined ? {} : arguments[1];
+    var _ref6 = arguments[1] === undefined ? {} : arguments[1];
 
-    var separator = _ref5.separator;
-    var min = _ref5.min;
+    var separator = _ref6.separator;
+    var min = _ref6.min;
 
     if (min === undefined) min = 1;
     return function (tokens) {

@@ -5,7 +5,9 @@ Object.defineProperty(exports, '__esModule', {
 });
 exports.merge = merge;
 exports.mergeInto = mergeInto;
-exports.randomString = randomString;
+exports.md5 = md5;
+
+var _crypto = require('crypto');
 
 function merge(a, b) {
     return mergeInto(mergeInto({}, a), b);
@@ -22,15 +24,8 @@ function mergeInto(a, b) {
     return a;
 }
 
-function randomString() {
-    var n = arguments[0] === undefined ? 16 : arguments[0];
-
-    var chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    var s = '';
-
-    for (var i = 0; i < n; i++) {
-        s += chars[Math.floor(Math.random() * chars.length)];
-    }
-
-    return s;
+function md5(string) {
+    var hash = (0, _crypto.createHash)('md5');
+    hash.update(string);
+    return hash.digest('hex');
 }

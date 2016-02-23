@@ -1,3 +1,4 @@
+import {createHash} from 'crypto';
 
 export function merge(a, b) {
     return mergeInto(mergeInto({}, a), b);
@@ -14,13 +15,8 @@ export function mergeInto(a, b) {
     return a;
 }
 
-export function randomString(n = 16) {
-    const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    let s = '';
-
-    for (let i = 0; i < n; i++) {
-        s += chars[Math.floor(Math.random() * chars.length)];
-    }
-
-    return s;
+export function md5(string) {
+    const hash = createHash('md5');
+    hash.update(string);
+    return hash.digest('hex');
 }

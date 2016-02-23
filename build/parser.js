@@ -39,7 +39,7 @@ function parseQuery(query) {
 function parseSubQuery(query) {
     var tokens = (0, _tokenizer.tokenize)(query);
 
-    return parser(tokens).then(keyword('SELECT')).bind('select', outputColumns).then(keyword('FROM')).bind('from', tableName).bind('where', createConditionClause('WHERE')).map(parseGroupByHaving).bind('orderBy', orderByClause).bind('limit', limitClause).bind('offset', offsetClause);
+    return parser(tokens).then(keyword('SELECT')).bind('select', outputColumns).then(keyword('FROM')).bind('from', tableName).bind('where', createConditionClause('WHERE')).map(parseGroupByHaving).bind('orderBy', orderByClause).bind('limit', limitClause).bind('offset', offsetClause).mapNode(ast.query);
 }
 
 function parseGroupByHaving(parser) {
@@ -73,9 +73,11 @@ function orderingTerm(tokens) {
         var rest = _tokens.slice(1);
 
         if (isKeyword('ASC', first) || isKeyword('DESC', first)) {
-            return parser(rest, first.string.toLowerCase());
+            return parser(rest, first.string);
         }
-        return parser(tokens, 'asc');
+        return parser(tokens, 'ASC');
+    }).mapNode(function (node) {
+        return ast.orderingTerm(node.expression, node.direction);
     });
 }
 
@@ -140,26 +142,7 @@ function expression(tokens) {
         });
     });
 }
-/*
-function namedExpression(tokens) {
-    const {node: exp, rest} = expression(tokens);
 
-    const node = {
-        type: 'namedExpression',
-        expression: exp,
-        name: exp.string,
-    };
-
-    if (isKeyword('AS', rest[0])) {
-        return parser(rest.slice(1), node)
-            .bind('name', atom)
-            .mapNode(node => {
-                node.name = node.name.value;
-            });
-    }
-    else return parser(rest, node);
-}
-*/
 function namedExpression(tokens) {
     return expression(tokens).mapNode(function (expression) {
         return { expression: expression };

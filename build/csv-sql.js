@@ -20,6 +20,8 @@ var _csv2 = _interopRequireDefault(_csv);
 
 var _parser = require('./parser');
 
+var _aggregates = require('./aggregates');
+
 var _select = require('./select');
 
 var _where = require('./where');
@@ -33,7 +35,7 @@ var _offset = require('./offset');
 var _limit = require('./limit');
 
 function performQuery(queryString) {
-    var query = (0, _groupBy.identifyAggregatesInQuery)((0, _parser.parseQuery)(queryString));
+    var query = (0, _aggregates.identifyAggregatesInQuery)((0, _parser.parseQuery)(queryString));
     //console.log(JSON.stringify(query, null, 4));
 
     var filePath = query.from;

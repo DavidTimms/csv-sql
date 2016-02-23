@@ -3,9 +3,10 @@ import fs from 'fs';
 import csv from 'csv';
 
 import {parseQuery} from './parser';
+import {identifyAggregatesInQuery} from './aggregates';
 import {performSelect} from './select';
 import {performWhere} from './where';
-import {GroupingStream, identifyAggregatesInQuery} from './group-by';
+import {GroupingStream} from './group-by';
 import {OrderingStream} from './order-by';
 import {performOffset} from './offset';
 import {performLimit} from './limit';

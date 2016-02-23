@@ -27,7 +27,8 @@ function parseSubQuery(query) {
         .map(parseGroupByHaving)
         .bind('orderBy', orderByClause)
         .bind('limit', limitClause)
-        .bind('offset', offsetClause);
+        .bind('offset', offsetClause)
+        .mapNode(ast.query);
 }
 
 function parseGroupByHaving(parser) {
@@ -63,10 +64,11 @@ function orderingTerm(tokens) {
         .bind('direction', tokens => {
             const [first, ...rest] = tokens;
             if (isKeyword('ASC', first) || isKeyword('DESC', first)) {
-                return parser(rest, first.string.toLowerCase());
+                return parser(rest, first.string);
             }
-            return parser(tokens, 'asc');
-        });
+            return parser(tokens, 'ASC');
+        })
+        .mapNode(node => ast.orderingTerm(node.expression, node.direction));
 }
 
 function limitClause(tokens) {
@@ -119,26 +121,7 @@ function expression(tokens) {
             .mapNode(node => ast.binaryExpression(node.operator, node.left, node.right))
     );
 }
-/*
-function namedExpression(tokens) {
-    const {node: exp, rest} = expression(tokens);
 
-    const node = {
-        type: 'namedExpression',
-        expression: exp,
-        name: exp.string,
-    };
-
-    if (isKeyword('AS', rest[0])) {
-        return parser(rest.slice(1), node)
-            .bind('name', atom)
-            .mapNode(node => {
-                node.name = node.name.value;
-            });
-    }
-    else return parser(rest, node);
-}
-*/
 function namedExpression(tokens) {
     return expression(tokens)
         .mapNode(expression => ({expression}))

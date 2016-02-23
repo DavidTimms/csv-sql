@@ -1,5 +1,4 @@
-import {merge, randomString} from './utils';
-import {evaluateExpression, isNull, str} from './evaluate-expression';
+import {evaluateExpression, str} from './evaluate-expression';
 import stream from 'stream';
 
 class EmptyObject extends null {}
@@ -81,80 +80,3 @@ export class GroupingStream extends stream.Transform {
 
     }
 }
-
-export function identifyAggregatesInQuery(query) {
-
-    // TODO validate that aggregates are not used in WHERE or GROUP BY clauses
-
-
-    const select = query.select;
-    const orderBy = query.orderBy;
-    const having = query.having;
-    const aggregates = [];
-
-    return merge(query, {select, orderBy, having, aggregates});
-}
-
-export function identifyAggregatesInExpression(exp) {
-    switch (exp.type) {
-        case 'call':
-            if (aggregateFunctions.hasOwnProperty(exp.functionName)) {
-                // Convert the 'call' node to an 'aggregate' node
-                // and add it to the list of aggregates
-
-                if (exp.arguments.some(expressionContainsAggregate)) {
-                    throw Error('Calls to aggregate functions cannot be nested');
-                }
-                const aggregateExp = merge(exp, {type: 'aggregate', id: randomString()});
-                return {
-                    aggregates: [aggregateExp],
-                    expression: aggregateExp,
-                };
-            }
-            else {
-                // recursively search for aggregates in the function
-                // call's arguments
-                const initial = {
-                    aggregates: [],
-                    expression: merge(exp, {arguments: []}),
-                };
-                return exp.arguments
-                    .map(identifyAggregatesInExpression)
-                    .reduce((current, {aggregates, expression}) => {
-                        current.aggregates.push(...aggregates);
-                        current.expression.arguments.push(expression);
-                        return current;
-                    }, initial);
-            }
-        case 'binaryExpression':
-            // recursively search for aggregates in the operands of the
-            // binary expression
-            const left = identifyAggregatesInExpression(exp.left);
-            const right = identifyAggregatesInExpression(exp.right);
-            return {
-                aggregates: left.aggregates.concat(right.aggregates),
-                expression: merge(exp, {
-                    left: left.expression,
-                    right: right.expression,
-                }),
-            };
-        default:
-            // return the expresssion unchanged, a it is a basic type
-            // that cannot contain aggregates
-            return {
-                aggregates: [],
-                expression: exp,
-            };
-    }
-}
-
-function expressionContainsAggregate(exp) {
-    return identifyAggregatesInExpression(exp).aggregates.length > 0;
-}
-
-const aggregateFunctions = {
-    COUNT: {
-        initial: 0,
-        reducer: (subTotal, value) => subTotal + (isNull(value) ? 0 : 1),
-    },
-};

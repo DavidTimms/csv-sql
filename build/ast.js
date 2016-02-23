@@ -4,23 +4,30 @@ Object.defineProperty(exports, '__esModule', {
     value: true
 });
 exports.literal = literal;
+exports.string = string;
 exports.identifier = identifier;
 exports.number = number;
 exports.call = call;
+exports.aggregate = aggregate;
 exports.binaryExpression = binaryExpression;
 exports.namedExpression = namedExpression;
+exports.orderingTerm = orderingTerm;
+exports.query = query;
+
+var _utils = require('./utils');
 
 function literal(value) {
-    var string = undefined;
-    if (typeof value === 'string') {
-        string = quoteString(value, '"');
-    } else {
-        string = String(value).toUpperCase();
-    }
     return {
         type: 'literal',
         value: value,
-        string: string };
+        string: String(value).toUpperCase() };
+}
+
+function string(s) {
+    return {
+        type: 'string',
+        value: s,
+        string: quoteString(s, '"') };
 }
 
 function tokenMaker(type) {
@@ -87,6 +94,15 @@ function call(functionName) {
         }).join(', ') + ')' };
 }
 
+function aggregate() {
+    for (var _len = arguments.length, callArgs = Array(_len), _key = 0; _key < _len; _key++) {
+        callArgs[_key] = arguments[_key];
+    }
+
+    var callNode = call.apply(undefined, callArgs);
+    return (0, _utils.merge)(callNode, { type: 'aggregate', id: (0, _utils.md5)(callNode.string) });
+}
+
 function binaryExpression(operator, left, right) {
     return {
         type: 'binaryExpression',
@@ -106,6 +122,45 @@ function namedExpression(expression) {
         type: 'namedExpression',
         expression: expression,
         name: name };
+}
+
+function orderingTerm(expression) {
+    var direction = arguments[1] === undefined ? 'asc' : arguments[1];
+
+    return {
+        type: 'orderingTerm',
+        expression: expression,
+        direction: direction.toLowerCase() };
+}
+
+function query(_ref) {
+    var select = _ref.select;
+    var from = _ref.from;
+    var _ref$where = _ref.where;
+    var where = _ref$where === undefined ? null : _ref$where;
+    var _ref$groupBy = _ref.groupBy;
+    var groupBy = _ref$groupBy === undefined ? null : _ref$groupBy;
+    var _ref$having = _ref.having;
+    var having = _ref$having === undefined ? null : _ref$having;
+    var _ref$orderBy = _ref.orderBy;
+    var orderBy = _ref$orderBy === undefined ? null : _ref$orderBy;
+    var _ref$limit = _ref.limit;
+    var limit = _ref$limit === undefined ? null : _ref$limit;
+    var _ref$offset = _ref.offset;
+    var offset = _ref$offset === undefined ? null : _ref$offset;
+    var _ref$aggregates = _ref.aggregates;
+    var aggregates = _ref$aggregates === undefined ? null : _ref$aggregates;
+
+    return {
+        select: select,
+        from: from,
+        where: where,
+        groupBy: groupBy,
+        having: having,
+        orderBy: orderBy,
+        limit: limit,
+        offset: offset,
+        aggregates: aggregates };
 }
 
 function parenWrap(exp) {

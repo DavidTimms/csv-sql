@@ -144,33 +144,21 @@ describe('tokenize', () => {
 
 describe('parseQuery', () => {
     it('should parse basic starred queries', () => {
-        assert.deepEqual(parseQuery('SELECT * FROM "example.csv"'), {
+        assert.deepEqual(parseQuery('SELECT * FROM "example.csv"'), ast.query({
             select: '*',
             from: 'example.csv',
-            where: null,
-            groupBy: null,
-            orderBy: null,
-            having: null,
-            limit: null,
-            offset: null,
-        });
+        }));
     });
     
     it('should parse queries with an output column list', () => {
-        assert.deepEqual(parseQuery('SELECT name, age, gender FROM "people.csv"'), {
+        assert.deepEqual(parseQuery('SELECT name, age, gender FROM "people.csv"'), ast.query({
             select: [
                 ast.namedExpression(ast.identifier('name')),
                 ast.namedExpression(ast.identifier('age')),
                 ast.namedExpression(ast.identifier('gender')),
             ],
             from: 'people.csv',
-            where: null,
-            groupBy: null,
-            having: null,
-            orderBy: null,
-            limit: null,
-            offset: null,
-        });
+        }));
     });
     
     it('should parse queries with renamed columns', () => {
@@ -195,35 +183,14 @@ describe('parseQuery', () => {
         const sql = (
             'SELECT UPPERCASE(left) = UPPERCASE(right) AS match FROM "c.csv"');
         assert.deepEqual(parseQuery(sql).select, [
-            {
-                type: 'namedExpression',
-                expression: {
-                    type: 'binaryExpression',
-                    operator: '=',
-                    left: {
-                        type: 'call',
-                        functionName: 'UPPERCASE',
-                        arguments: [{
-                            type: 'identifier',
-                            string: 'left',
-                            value: 'left',
-                        }],
-                        string: 'UPPERCASE(left)',
-                    },
-                    right: {
-                        type: 'call',
-                        functionName: 'UPPERCASE',
-                        arguments: [{
-                            type: 'identifier',
-                            string: 'right',
-                            value: 'right',
-                        }],
-                        string: 'UPPERCASE(right)',
-                    },
-                    string: 'UPPERCASE(left) = UPPERCASE(right)',
-                },
-                name: 'match',
-            },
+            ast.namedExpression(
+                ast.binaryExpression(
+                    '=',
+                    ast.call('UPPERCASE', [ast.identifier('left')]),
+                    ast.call('UPPERCASE', [ast.identifier('right')])
+                ),
+                'match'
+            )
         ]);
     });
 
@@ -243,35 +210,17 @@ describe('parseQuery', () => {
     it('should allow grouping expressions with parenthesis', () => {
         const sql = ('SELECT (a OR b) AND c FROM "d.csv"');
         assert.deepEqual(parseQuery(sql).select, [
-            {
-                type: 'namedExpression',
-                expression: {
-                    type: 'binaryExpression',
-                    operator: 'AND',
-                    left: {
-                        type: 'binaryExpression',
-                        operator: 'OR',
-                        left: {
-                            type: 'identifier',
-                            string: 'a',
-                            value: 'a',
-                        },
-                        right: {
-                            type: 'identifier',
-                            string: 'b',
-                            value: 'b',
-                        },
-                        string: 'a OR b',
-                    },
-                    right: {
-                        type: 'identifier',
-                        string: 'c',
-                        value: 'c',
-                    },
-                    string: '(a OR b) AND c',
-                },
-                name: '(a OR b) AND c',
-            },
+            ast.namedExpression(
+                ast.binaryExpression(
+                    'AND',
+                    ast.binaryExpression(
+                        'OR',
+                        ast.identifier('a'),
+                        ast.identifier('b')
+                    ),
+                    ast.identifier('c')
+                )
+            )
         ]);
     });
 
@@ -289,82 +238,31 @@ describe('parseQuery', () => {
 
     it('should accept a WHERE clause', () => {
         const sql = ('SELECT a FROM "b.csv" WHERE a > 50');
-        assert.deepEqual(parseQuery(sql).where, {
-            type: 'binaryExpression',
-            operator: '>',
-            left: {
-                type: 'identifier',
-                string: 'a',
-                value: 'a',
-            },
-            right: {
-                type: 'number',
-                value: 50,
-                string: '50',
-            },
-            string: 'a > 50',
-        });
+        assert.deepEqual(
+            parseQuery(sql).where,
+            ast.binaryExpression('>', ast.identifier('a'), ast.number(50))
+        );
     });
 
     it('should accept a basic GROUP BY clause', () => {
         const sql = ('SELECT * FROM "a.csv" GROUP BY b');
-        assert.deepEqual(parseQuery(sql).groupBy, [
-            {
-                type: 'identifier',
-                string: 'b',
-                value: 'b',
-            },
-        ]);
+        assert.deepEqual(parseQuery(sql).groupBy, [ast.identifier('b')]);
     });
 
     it('should accept a GROUP BY clause with multiple terms', () => {
         const sql = ('SELECT * FROM "a.csv" GROUP BY LOWERCASE(b),c="xyz"');
         assert.deepEqual(parseQuery(sql).groupBy, [
-            {
-                type: 'call',
-                functionName: 'LOWERCASE',
-                arguments: [{
-                    type: 'identifier',
-                    string: 'b',
-                    value: 'b',
-                }],
-                string: 'LOWERCASE(b)',
-            },
-            {
-                type: 'binaryExpression',
-                operator: '=',
-                left: {
-                    type: 'identifier',
-                    string: 'c',
-                    value: 'c',
-                },
-                right: {
-                    type: 'string',
-                    string: '"xyz"',
-                    value: 'xyz',
-                },
-                string: 'c = "xyz"',
-            },
+            ast.call('LOWERCASE', [ast.identifier('b')]),
+            ast.binaryExpression('=', ast.identifier('c'), ast.string('xyz')),
         ]);
     });
 
     it('should accept a HAVING clause', () => {
         const sql = ('SELECT * FROM "a.csv" GROUP BY b HAVING c = 2');
-        assert.deepEqual(parseQuery(sql).having, {
-           type: 'binaryExpression',
-            operator: '=',
-            left: {
-                type: 'identifier',
-                string: 'c',
-                value: 'c',
-            },
-            right: {
-                type: 'number',
-                string: '2',
-                value: 2,
-            },
-            string: 'c = 2',
-        });
+        assert.deepEqual(
+            parseQuery(sql).having, 
+            ast.binaryExpression('=', ast.identifier('c'), ast.number(2))
+        );
     });
 
     it('should reject a HAVING clause without a GROUP BY', () => {
@@ -375,59 +273,18 @@ describe('parseQuery', () => {
     it('should accept a basic ORDER BY clause', () => {
         const sql = ('SELECT * FROM "a.csv" ORDER BY b');
         assert.deepEqual(parseQuery(sql).orderBy, [
-            {
-                direction: 'asc',
-                expression: {
-                    type: 'identifier',
-                    string: 'b',
-                    value: 'b',
-                },
-            },
+            ast.orderingTerm(ast.identifier('b'), 'ASC'),
         ]);
     });
 
     it('should accept an ORDER BY clause with multiple terms', () => {
         const sql = ('SELECT * FROM "a.csv" ORDER BY UPPERCASE(b), c, d = "test"');
         assert.deepEqual(parseQuery(sql).orderBy, [
-            {
-                direction: 'asc',
-                expression: {
-                    type: 'call',
-                    functionName: 'UPPERCASE',
-                    arguments: [{
-                        type: 'identifier',
-                        string: 'b',
-                        value: 'b',
-                    }],
-                    string: 'UPPERCASE(b)',
-                },
-            },
-            {
-                direction: 'asc',
-                expression: {
-                    type: 'identifier',
-                    string: 'c',
-                    value: 'c',
-                },
-            },
-            {
-                direction: 'asc',
-                expression: {
-                    type: 'binaryExpression',
-                    operator: '=',
-                    left: {
-                        type: 'identifier',
-                        string: 'd',
-                        value: 'd',
-                    },
-                    right: {
-                        type: 'string',
-                        string: '"test"',
-                        value: 'test',
-                    },
-                    string: 'd = "test"',
-                },
-            },
+            ast.orderingTerm(ast.call('UPPERCASE', [ast.identifier('b')])),
+            ast.orderingTerm(ast.identifier('c')),
+            ast.orderingTerm(
+                ast.binaryExpression('=', ast.identifier('d'), ast.string('test'))
+            )
         ]);
     });
 

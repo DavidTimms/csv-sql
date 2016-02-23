@@ -1,17 +1,19 @@
+import {merge, md5} from './utils';
 
 export function literal(value) {
-    let string;
-    if (typeof value === 'string') {
-        string = quoteString(value, '"');
-    }
-    else {
-        string = String(value).toUpperCase();
-    }
     return {
         type: 'literal',
         value,
-        string,
+        string: String(value).toUpperCase(),
     };
+}
+
+export function string(s) {
+    return {
+        type: 'string',
+        value: s,
+        string: quoteString(s, '"'),
+    }
 }
 
 function tokenMaker(type, defaultString = null) {
@@ -66,6 +68,11 @@ export function call(functionName, args=[]) {
     };
 }
 
+export function aggregate(...callArgs) {
+    const callNode = call(...callArgs);
+    return merge(callNode, {type: 'aggregate', id: md5(callNode.string)});
+}
+
 export function binaryExpression(operator, left, right) {
     return {
         type: 'binaryExpression',
@@ -84,6 +91,37 @@ export function namedExpression(expression, name=null) {
         type: 'namedExpression',
         expression,
         name,
+    }
+}
+
+export function orderingTerm(expression, direction='asc') {
+    return {
+        type: 'orderingTerm',
+        expression,
+        direction: direction.toLowerCase(),
+    };
+}
+
+export function query({select,
+                       from,
+                       where=null,
+                       groupBy=null,
+                       having=null,
+                       orderBy=null,
+                       limit=null,
+                       offset=null,
+                       aggregates=null}) {
+
+    return {
+        select,
+        from,
+        where,
+        groupBy,
+        having,
+        orderBy,
+        limit,
+        offset,
+        aggregates,
     }
 }
 

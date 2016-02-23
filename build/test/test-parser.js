@@ -82,27 +82,15 @@ describe('tokenize', function () {
 
 describe('parseQuery', function () {
     it('should parse basic starred queries', function () {
-        _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT * FROM "example.csv"'), {
+        _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT * FROM "example.csv"'), ast.query({
             select: '*',
-            from: 'example.csv',
-            where: null,
-            groupBy: null,
-            orderBy: null,
-            having: null,
-            limit: null,
-            offset: null });
+            from: 'example.csv' }));
     });
 
     it('should parse queries with an output column list', function () {
-        _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT name, age, gender FROM "people.csv"'), {
+        _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT name, age, gender FROM "people.csv"'), ast.query({
             select: [ast.namedExpression(ast.identifier('name')), ast.namedExpression(ast.identifier('age')), ast.namedExpression(ast.identifier('gender'))],
-            from: 'people.csv',
-            where: null,
-            groupBy: null,
-            having: null,
-            orderBy: null,
-            limit: null,
-            offset: null });
+            from: 'people.csv' }));
     });
 
     it('should parse queries with renamed columns', function () {
@@ -115,29 +103,7 @@ describe('parseQuery', function () {
 
     it('should allow binary expressions mixed with functions and AS names', function () {
         var sql = 'SELECT UPPERCASE(left) = UPPERCASE(right) AS match FROM "c.csv"';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).select, [{
-            type: 'namedExpression',
-            expression: {
-                type: 'binaryExpression',
-                operator: '=',
-                left: {
-                    type: 'call',
-                    functionName: 'UPPERCASE',
-                    arguments: [{
-                        type: 'identifier',
-                        string: 'left',
-                        value: 'left' }],
-                    string: 'UPPERCASE(left)' },
-                right: {
-                    type: 'call',
-                    functionName: 'UPPERCASE',
-                    arguments: [{
-                        type: 'identifier',
-                        string: 'right',
-                        value: 'right' }],
-                    string: 'UPPERCASE(right)' },
-                string: 'UPPERCASE(left) = UPPERCASE(right)' },
-            name: 'match' }]);
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).select, [ast.namedExpression(ast.binaryExpression('=', ast.call('UPPERCASE', [ast.identifier('left')]), ast.call('UPPERCASE', [ast.identifier('right')])), 'match')]);
     });
 
     it('should support the AND operator', function () {
@@ -147,29 +113,7 @@ describe('parseQuery', function () {
 
     it('should allow grouping expressions with parenthesis', function () {
         var sql = 'SELECT (a OR b) AND c FROM "d.csv"';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).select, [{
-            type: 'namedExpression',
-            expression: {
-                type: 'binaryExpression',
-                operator: 'AND',
-                left: {
-                    type: 'binaryExpression',
-                    operator: 'OR',
-                    left: {
-                        type: 'identifier',
-                        string: 'a',
-                        value: 'a' },
-                    right: {
-                        type: 'identifier',
-                        string: 'b',
-                        value: 'b' },
-                    string: 'a OR b' },
-                right: {
-                    type: 'identifier',
-                    string: 'c',
-                    value: 'c' },
-                string: '(a OR b) AND c' },
-            name: '(a OR b) AND c' }]);
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).select, [ast.namedExpression(ast.binaryExpression('AND', ast.binaryExpression('OR', ast.identifier('a'), ast.identifier('b')), ast.identifier('c')))]);
     });
 
     it('should support correct operator precedence');
@@ -186,65 +130,22 @@ describe('parseQuery', function () {
 
     it('should accept a WHERE clause', function () {
         var sql = 'SELECT a FROM "b.csv" WHERE a > 50';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).where, {
-            type: 'binaryExpression',
-            operator: '>',
-            left: {
-                type: 'identifier',
-                string: 'a',
-                value: 'a' },
-            right: {
-                type: 'number',
-                value: 50,
-                string: '50' },
-            string: 'a > 50' });
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).where, ast.binaryExpression('>', ast.identifier('a'), ast.number(50)));
     });
 
     it('should accept a basic GROUP BY clause', function () {
         var sql = 'SELECT * FROM "a.csv" GROUP BY b';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).groupBy, [{
-            type: 'identifier',
-            string: 'b',
-            value: 'b' }]);
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).groupBy, [ast.identifier('b')]);
     });
 
     it('should accept a GROUP BY clause with multiple terms', function () {
         var sql = 'SELECT * FROM "a.csv" GROUP BY LOWERCASE(b),c="xyz"';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).groupBy, [{
-            type: 'call',
-            functionName: 'LOWERCASE',
-            arguments: [{
-                type: 'identifier',
-                string: 'b',
-                value: 'b' }],
-            string: 'LOWERCASE(b)' }, {
-            type: 'binaryExpression',
-            operator: '=',
-            left: {
-                type: 'identifier',
-                string: 'c',
-                value: 'c' },
-            right: {
-                type: 'string',
-                string: '"xyz"',
-                value: 'xyz' },
-            string: 'c = "xyz"' }]);
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).groupBy, [ast.call('LOWERCASE', [ast.identifier('b')]), ast.binaryExpression('=', ast.identifier('c'), ast.string('xyz'))]);
     });
 
     it('should accept a HAVING clause', function () {
         var sql = 'SELECT * FROM "a.csv" GROUP BY b HAVING c = 2';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).having, {
-            type: 'binaryExpression',
-            operator: '=',
-            left: {
-                type: 'identifier',
-                string: 'c',
-                value: 'c' },
-            right: {
-                type: 'number',
-                string: '2',
-                value: 2 },
-            string: 'c = 2' });
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).having, ast.binaryExpression('=', ast.identifier('c'), ast.number(2)));
     });
 
     it('should reject a HAVING clause without a GROUP BY', function () {
@@ -256,44 +157,12 @@ describe('parseQuery', function () {
 
     it('should accept a basic ORDER BY clause', function () {
         var sql = 'SELECT * FROM "a.csv" ORDER BY b';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy, [{
-            direction: 'asc',
-            expression: {
-                type: 'identifier',
-                string: 'b',
-                value: 'b' } }]);
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy, [ast.orderingTerm(ast.identifier('b'), 'ASC')]);
     });
 
     it('should accept an ORDER BY clause with multiple terms', function () {
         var sql = 'SELECT * FROM "a.csv" ORDER BY UPPERCASE(b), c, d = "test"';
-        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy, [{
-            direction: 'asc',
-            expression: {
-                type: 'call',
-                functionName: 'UPPERCASE',
-                arguments: [{
-                    type: 'identifier',
-                    string: 'b',
-                    value: 'b' }],
-                string: 'UPPERCASE(b)' } }, {
-            direction: 'asc',
-            expression: {
-                type: 'identifier',
-                string: 'c',
-                value: 'c' } }, {
-            direction: 'asc',
-            expression: {
-                type: 'binaryExpression',
-                operator: '=',
-                left: {
-                    type: 'identifier',
-                    string: 'd',
-                    value: 'd' },
-                right: {
-                    type: 'string',
-                    string: '"test"',
-                    value: 'test' },
-                string: 'd = "test"' } }]);
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy, [ast.orderingTerm(ast.call('UPPERCASE', [ast.identifier('b')])), ast.orderingTerm(ast.identifier('c')), ast.orderingTerm(ast.binaryExpression('=', ast.identifier('d'), ast.string('test')))]);
     });
 
     it('should accept an ORDER BY clause with a direction', function () {

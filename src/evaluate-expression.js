@@ -23,6 +23,8 @@ export function evaluateExpression(exp, context) {
                 exp.operator,
                 evaluateExpression(exp.left, context),
                 evaluateExpression(exp.right, context));
+        case 'aggregate':
+            return context._aggregateValues[exp.id];
         default:
             throw Error(`Unexpected expression type: ${exp.type}`);
     }

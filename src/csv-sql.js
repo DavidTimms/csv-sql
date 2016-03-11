@@ -38,7 +38,7 @@ export function performQuery(queryString) {
         .pipe(csv.parse({columns: true}))
         .pipe(csv.transform(performWhere(query)));
 
-    if (query.groupBy) {
+    if (query.aggregates.length > 0 || query.groupBy) {
         resultStream = resultStream.pipe(new GroupingStream(query));
     }
 

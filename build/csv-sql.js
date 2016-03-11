@@ -56,7 +56,7 @@ function performQuery(queryString) {
 
     var resultStream = tableReadStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _where.performWhere)(query)));
 
-    if (query.groupBy) {
+    if (query.aggregates.length > 0 || query.groupBy) {
         resultStream = resultStream.pipe(new _groupBy.GroupingStream(query));
     }
 

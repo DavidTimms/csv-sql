@@ -16,6 +16,8 @@ function _inherits(subClass, superClass) { if (typeof superClass !== 'function' 
 
 var _evaluateExpression = require('./evaluate-expression');
 
+var _aggregates = require('./aggregates');
+
 var _stream = require('stream');
 
 var _stream2 = _interopRequireDefault(_stream);
@@ -39,14 +41,16 @@ EmptyObject.prototype._hasOwnProperty = Object.prototype.hasOwnProperty;
 var GroupingStream = (function (_stream$Transform) {
     function GroupingStream(_ref2) {
         var groupBy = _ref2.groupBy;
-        var aggregations = _ref2.aggregations;
+        var aggregates = _ref2.aggregates;
 
         _classCallCheck(this, GroupingStream);
 
         _get(Object.getPrototypeOf(GroupingStream.prototype), 'constructor', this).call(this, { objectMode: true });
 
-        this.expressions = groupBy;
-        if (groupBy.length > 0) {
+        this.aggregates = aggregates;
+        this.expressions = groupBy || [];
+
+        if (this.expressions.length > 0) {
             this.grouping = new EmptyObject();
         } else {
             this.grouping = null;
@@ -109,13 +113,24 @@ var GroupingStream = (function (_stream$Transform) {
     }, {
         key: 'createGroupAggregations',
         value: function createGroupAggregations(baseRow) {
-            return;
-            row._aggregationValues = [];
-            for (var i = 0; i < this.aggregations.length; i++) {}
+            baseRow._aggregateValues = {};
+            for (var i = 0; i < this.aggregates.length; i++) {
+                var aggregate = this.aggregates[i];
+                var initial = _aggregates.aggregateFunctions[aggregate.functionName].initial;
+                baseRow._aggregateValues[aggregate.id] = initial;
+            }
         }
     }, {
         key: 'updateGroupAggregations',
-        value: function updateGroupAggregations(baseRow, row) {}
+        value: function updateGroupAggregations(baseRow, row) {
+            for (var i = 0; i < this.aggregates.length; i++) {
+                var aggregate = this.aggregates[i];
+                var reducer = _aggregates.aggregateFunctions[aggregate.functionName].reducer;
+                var current = baseRow._aggregateValues[aggregate.id];
+                var rowValue = (0, _evaluateExpression.evaluateExpression)(aggregate.arguments[0], row);
+                baseRow._aggregateValues[aggregate.id] = reducer(current, rowValue);
+            }
+        }
     }]);
 
     return GroupingStream;

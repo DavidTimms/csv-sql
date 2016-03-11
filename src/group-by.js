@@ -1,15 +1,18 @@
 import {evaluateExpression, str} from './evaluate-expression';
+import {aggregateFunctions} from './aggregates';
 import stream from 'stream';
 
 class EmptyObject extends null {}
 EmptyObject.prototype._hasOwnProperty = Object.prototype.hasOwnProperty;
 
 export class GroupingStream extends stream.Transform {
-    constructor({groupBy, aggregations}) {
+    constructor({groupBy, aggregates}) {
         super({objectMode: true});
 
-        this.expressions = groupBy;
-        if (groupBy.length > 0) {
+        this.aggregates = aggregates;
+        this.expressions = groupBy || [];
+
+        if (this.expressions.length > 0) {
             this.grouping = new EmptyObject();
         }
         else {
@@ -69,14 +72,21 @@ export class GroupingStream extends stream.Transform {
     }
 
     createGroupAggregations(baseRow) {
-        return;
-        row._aggregationValues = [];
-        for (let i = 0; i < this.aggregations.length; i++) {
-
+        baseRow._aggregateValues = {};
+        for (let i = 0; i < this.aggregates.length; i++) {
+            const aggregate = this.aggregates[i];
+            const initial = aggregateFunctions[aggregate.functionName].initial;
+            baseRow._aggregateValues[aggregate.id] = initial;
         }
     }
 
     updateGroupAggregations(baseRow, row) {
-
+        for (let i = 0; i < this.aggregates.length; i++) {
+            const aggregate = this.aggregates[i];
+            const reducer = aggregateFunctions[aggregate.functionName].reducer;
+            const current = baseRow._aggregateValues[aggregate.id];
+            const rowValue = evaluateExpression(aggregate.arguments[0], row);
+            baseRow._aggregateValues[aggregate.id] = reducer(current, rowValue);
+        }
     }
 }

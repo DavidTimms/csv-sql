@@ -2,9 +2,10 @@
 import {assert, AssertionError} from 'chai';
 import {performQuery, toCSV} from '../csv-sql';
 import {patternToRegExp} from '../evaluate-expression';
+import {logStream} from '../utils';
 
 function queryResults(queryString, callback) {
-    const stream = performQuery(queryString).pipe(toCSV());
+    const stream = toCSV(performQuery(queryString));
     const results = [];
 
     stream.on('data', data => {
@@ -95,11 +96,109 @@ describe('performQuery', () => {
         ]);
     });
 
-    it('should support COUNT aggregate function without GROUP BY'); (() => {
+    it('should support COUNT aggregate function without GROUP BY', () => {
         const queryString = 'SELECT COUNT(name) FROM "test/test.csv"';
         return queryResultsEqual(queryString, [
             'COUNT(name)',
             '3',
+        ]);
+    });
+
+    it('should support COUNT aggregate function with simple GROUP BY', () => {
+        const queryString = 'SELECT gender, COUNT(1) FROM "test/test.csv" GROUP BY gender';
+        return queryResultsEqual(queryString, [
+            'gender,COUNT(1)',
+            'M,2',
+            'F,1',
+        ]);
+    });
+
+    it('should support SUM aggregate function with simple GROUP BY', () => {
+        const queryString = `
+            SELECT continent, SUM(population)
+            FROM "test/countries.csv"
+            GROUP BY continent
+        `
+        return queryResultsEqual(queryString, [
+            'continent,SUM(population)',
+            'Asia,3820952123',
+            'North America,449352500',
+            'South America,205828000',
+            'Africa,454885505',
+            'Europe,293100710',
+        ]);
+    });
+
+    it('should support SUM aggregate function with simple GROUP BY', () => {
+        const queryString = `
+            SELECT continent, SUM(population)
+            FROM "test/countries.csv"
+            GROUP BY continent
+        `
+        return queryResultsEqual(queryString, [
+            'continent,SUM(population)',
+            'Asia,3820952123',
+            'North America,449352500',
+            'South America,205828000',
+            'Africa,454885505',
+            'Europe,293100710',
+        ]);
+    });
+
+    it('should support GROUP_CONCAT aggregate function with simple GROUP BY', () => {
+        const queryString = `
+            SELECT gender, GROUP_CONCAT(name)
+            FROM "test/test.csv"
+            GROUP BY gender
+        `
+        return queryResultsEqual(queryString, [
+            'gender,GROUP_CONCAT(name)',
+            'M,David TimmsBob Jones',
+            'F,Jenny Bloggs',
+        ]);
+    });
+
+    it('should support wildcard columns with GROUP BY', () => {
+        const queryString = 'SELECT * FROM "test/test.csv" GROUP BY gender';
+        return queryResultsEqual(queryString, [
+            'name,age,gender',
+            'David Timms,23,M',
+            'Jenny Bloggs,30,F',
+        ]);
+    });
+
+    it('should support multiple aggregate function with GROUP BY', () => {
+        const queryString = `
+            SELECT continent, MAX(population), MIN(population)
+            FROM "test/countries.csv"
+            GROUP BY continent
+        `
+        return queryResultsEqual(queryString, [
+            'continent,MAX(population),MIN(population)',
+            'Asia,1375610000,68124378',
+            'North America,323124000,126228500',
+            'South America,205828000,205828000',
+            'Africa,186988000,85026000',
+            'Europe,146544710,65097000',
+        ]);
+    });
+
+    it('should support multiple GROUP BY clauses', () => {
+        const queryString = `
+            SELECT continent, population > 100000000, COUNT(1)
+            FROM "test/countries.csv"
+            GROUP BY continent, population > 100000000
+        `
+        return queryResultsEqual(queryString, [
+            'continent,population > 100000000,COUNT(1)',
+            'Asia,1,7',
+            'Asia,0,4',
+            'North America,1,2',
+            'South America,1,1',
+            'Africa,1,1',
+            'Africa,0,3',
+            'Europe,1,1',
+            'Europe,0,2',
         ]);
     });
 

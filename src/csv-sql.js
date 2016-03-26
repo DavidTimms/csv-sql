@@ -2,6 +2,8 @@ import fs from 'fs';
 
 import csv from 'csv';
 
+import {preStringify, logStream} from './utils';
+
 import {parseQuery} from './parser';
 import {identifyAggregatesInQuery} from './aggregates';
 import {performSelect} from './select';
@@ -54,8 +56,8 @@ export function performQuery(queryString) {
     return resultStream;
 }
 
-export function toCSV() {
-    return csv.stringify({header: true});
+export function toCSV(rowStream) {
+    return rowStream.pipe(preStringify()).pipe(csv.stringify({header: true}));
 }
 
 function startRepl() {
@@ -66,8 +68,7 @@ function startRepl() {
         eval: function _eval(queryString, context, filename, callback) {
             const resultStream = performQuery(queryString);
 
-            resultStream
-                .pipe(toCSV())
+            toCSV(resultStream)
                 .pipe(process.stdout);
 
             resultStream.on('end', () => {
@@ -83,8 +84,7 @@ function startRepl() {
 
 if (!module.parent) {
     if (process.argv.length > 2) {
-        performQuery(...process.argv.slice(2))
-            .pipe(toCSV())
+        toCSV(performQuery(...process.argv.slice(2)))
             .pipe(process.stdout);
     }
     else {

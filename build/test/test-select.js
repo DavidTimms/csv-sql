@@ -6,8 +6,10 @@ var _csvSql = require('../csv-sql');
 
 var _evaluateExpression = require('../evaluate-expression');
 
+var _utils = require('../utils');
+
 function queryResults(queryString, callback) {
-    var stream = (0, _csvSql.performQuery)(queryString).pipe((0, _csvSql.toCSV)());
+    var stream = (0, _csvSql.toCSV)((0, _csvSql.performQuery)(queryString));
     var results = [];
 
     stream.on('data', function (data) {
@@ -70,9 +72,44 @@ describe('performQuery', function () {
         return queryResultsEqual(queryString, ['gender', 'M', 'F']);
     });
 
-    it('should support COUNT aggregate function without GROUP BY');(function () {
+    it('should support COUNT aggregate function without GROUP BY', function () {
         var queryString = 'SELECT COUNT(name) FROM "test/test.csv"';
         return queryResultsEqual(queryString, ['COUNT(name)', '3']);
+    });
+
+    it('should support COUNT aggregate function with simple GROUP BY', function () {
+        var queryString = 'SELECT gender, COUNT(1) FROM "test/test.csv" GROUP BY gender';
+        return queryResultsEqual(queryString, ['gender,COUNT(1)', 'M,2', 'F,1']);
+    });
+
+    it('should support SUM aggregate function with simple GROUP BY', function () {
+        var queryString = '\n            SELECT continent, SUM(population)\n            FROM "test/countries.csv"\n            GROUP BY continent\n        ';
+        return queryResultsEqual(queryString, ['continent,SUM(population)', 'Asia,3820952123', 'North America,449352500', 'South America,205828000', 'Africa,454885505', 'Europe,293100710']);
+    });
+
+    it('should support SUM aggregate function with simple GROUP BY', function () {
+        var queryString = '\n            SELECT continent, SUM(population)\n            FROM "test/countries.csv"\n            GROUP BY continent\n        ';
+        return queryResultsEqual(queryString, ['continent,SUM(population)', 'Asia,3820952123', 'North America,449352500', 'South America,205828000', 'Africa,454885505', 'Europe,293100710']);
+    });
+
+    it('should support GROUP_CONCAT aggregate function with simple GROUP BY', function () {
+        var queryString = '\n            SELECT gender, GROUP_CONCAT(name)\n            FROM "test/test.csv"\n            GROUP BY gender\n        ';
+        return queryResultsEqual(queryString, ['gender,GROUP_CONCAT(name)', 'M,David TimmsBob Jones', 'F,Jenny Bloggs']);
+    });
+
+    it('should support wildcard columns with GROUP BY', function () {
+        var queryString = 'SELECT * FROM "test/test.csv" GROUP BY gender';
+        return queryResultsEqual(queryString, ['name,age,gender', 'David Timms,23,M', 'Jenny Bloggs,30,F']);
+    });
+
+    it('should support multiple aggregate function with GROUP BY', function () {
+        var queryString = '\n            SELECT continent, MAX(population), MIN(population)\n            FROM "test/countries.csv"\n            GROUP BY continent\n        ';
+        return queryResultsEqual(queryString, ['continent,MAX(population),MIN(population)', 'Asia,1375610000,68124378', 'North America,323124000,126228500', 'South America,205828000,205828000', 'Africa,186988000,85026000', 'Europe,146544710,65097000']);
+    });
+
+    it('should support multiple GROUP BY clauses', function () {
+        var queryString = '\n            SELECT continent, population > 100000000, COUNT(1)\n            FROM "test/countries.csv"\n            GROUP BY continent, population > 100000000\n        ';
+        return queryResultsEqual(queryString, ['continent,population > 100000000,COUNT(1)', 'Asia,1,7', 'Asia,0,4', 'North America,1,2', 'South America,1,1', 'Africa,1,1', 'Africa,0,3', 'Europe,1,1', 'Europe,0,2']);
     });
 
     it('should support numerical ORDER BY', function () {

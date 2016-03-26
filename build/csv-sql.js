@@ -18,6 +18,8 @@ var _csv = require('csv');
 
 var _csv2 = _interopRequireDefault(_csv);
 
+var _utils = require('./utils');
+
 var _parser = require('./parser');
 
 var _aggregates = require('./aggregates');
@@ -69,8 +71,8 @@ function performQuery(queryString) {
     return resultStream;
 }
 
-function toCSV() {
-    return _csv2['default'].stringify({ header: true });
+function toCSV(rowStream) {
+    return rowStream.pipe((0, _utils.preStringify)()).pipe(_csv2['default'].stringify({ header: true }));
 }
 
 function startRepl() {
@@ -81,7 +83,7 @@ function startRepl() {
         eval: function _eval(queryString, context, filename, callback) {
             var resultStream = performQuery(queryString);
 
-            resultStream.pipe(toCSV()).pipe(process.stdout);
+            toCSV(resultStream).pipe(process.stdout);
 
             resultStream.on('end', function () {
                 callback(null, undefined);
@@ -94,7 +96,7 @@ function startRepl() {
 
 if (!module.parent) {
     if (process.argv.length > 2) {
-        performQuery.apply(undefined, _toConsumableArray(process.argv.slice(2))).pipe(toCSV()).pipe(process.stdout);
+        toCSV(performQuery.apply(undefined, _toConsumableArray(process.argv.slice(2)))).pipe(process.stdout);
     } else {
         // Start a REPL if no arguments have been provided
         startRepl();

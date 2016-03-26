@@ -6,6 +6,9 @@ export function performSelect(query) {
         const outRow = {};
         const outputColumns = query.select;
         if (outputColumns === '*') {
+            if (inRow.hasOwnProperty('_aggregateValues')) {
+                delete inRow._aggregateValues;
+            }
             return inRow;
         }
         for (var i = 0; i < outputColumns.length; i++) {

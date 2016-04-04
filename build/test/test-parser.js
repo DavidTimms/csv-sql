@@ -155,6 +155,11 @@ describe('parseQuery', function () {
         }, SyntaxError);
     });
 
+    it('should allow COUNT(*)', function () {
+        var sql = 'SELECT COUNT(*) FROM "a.csv"';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).select, [ast.namedExpression(ast.call('COUNT', [ast.star()]))]);
+    });
+
     it('should accept a basic ORDER BY clause', function () {
         var sql = 'SELECT * FROM "a.csv" ORDER BY b';
         _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy, [ast.orderingTerm(ast.identifier('b'), 'ASC')]);

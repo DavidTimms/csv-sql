@@ -99,6 +99,12 @@ function atom([first, ...rest]) {
     else if (isType('identifier', first) && isType('parOpen', rest[0])) {
         const functionName = first.value;
 
+        if (functionName.toUpperCase() === 'COUNT' && isType('star', rest[1])) {
+            return parser(rest.slice(2))
+                .then(parClose)
+                .mapNode(node => ast.call(functionName, [ast.star()]));
+        }
+
         return parser(rest.slice(1))
             .bind('arguments', many(expression, {separator: comma, min: 0}))
             .then(parClose)

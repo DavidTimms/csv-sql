@@ -12,8 +12,9 @@ Todo
 - [x] `LIKE` operator.
 - [X] `GROUP BY`.
 - [X] Aggregate functions.
-- [ ] `COUNT(*)` (synonym for `COUNT(1)`).
+- [X] `COUNT(*)` (synonym for `COUNT(1)`).
 - [ ] `HAVING`.
 - [ ] `DISTINCT`.
+- [ ] `CASE`.
 - [ ] More built-in functions.
 - [ ] User-defined functions provided through node modules.

@@ -270,6 +270,13 @@ describe('parseQuery', () => {
         assert.throws(() => parseQuery(sql), SyntaxError);
     });
 
+    it('should allow COUNT(*)', () => {
+        const sql = 'SELECT COUNT(*) FROM "a.csv"';
+        assert.deepEqual(parseQuery(sql).select, [
+            ast.namedExpression(ast.call('COUNT', [ast.star()])),
+        ]);
+    });
+
     it('should accept a basic ORDER BY clause', () => {
         const sql = ('SELECT * FROM "a.csv" ORDER BY b');
         assert.deepEqual(parseQuery(sql).orderBy, [

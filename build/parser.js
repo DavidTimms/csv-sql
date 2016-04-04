@@ -116,6 +116,14 @@ function atom(_ref2) {
         var _ret = (function () {
             var functionName = first.value;
 
+            if (functionName.toUpperCase() === 'COUNT' && isType('star', rest[1])) {
+                return {
+                    v: parser(rest.slice(2)).then(parClose).mapNode(function (node) {
+                        return ast.call(functionName, [ast.star()]);
+                    })
+                };
+            }
+
             return {
                 v: parser(rest.slice(1)).bind('arguments', many(expression, { separator: comma, min: 0 })).then(parClose).mapNode(function (node) {
                     return ast.call(functionName, node.arguments);

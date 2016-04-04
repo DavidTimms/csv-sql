@@ -5,6 +5,7 @@ export function evaluateExpression(exp, context) {
         case 'number':
         case 'string':
         case 'literal':
+        case 'star':
             return exp.value;
         case 'identifier':
             if (context.hasOwnProperty(exp.value)) {

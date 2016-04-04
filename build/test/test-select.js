@@ -117,6 +117,11 @@ describe('performQuery', function () {
         return queryResultsEqual(queryString, ['number', '', '1', '2.25', '2.5', '5', '10', '10', '55', '100']);
     });
 
+    it('should support COUNT(*)', function () {
+        var queryString = 'SELECT COUNT(*), COUNT(number) FROM "test/numbers.csv"';
+        return queryResultsEqual(queryString, ['COUNT(*),COUNT(number)', '9,8']);
+    });
+
     it('should support ORDER BY with a direction (ASC)', function () {
 
         var ascQueryString = 'SELECT name FROM "test/test.csv" ORDER BY name ASC';
@@ -164,7 +169,7 @@ describe('patternToRegExp', function () {
         regExpEqual((0, _evaluateExpression.patternToRegExp)('^(3*4) + [$!]?'), /^\^\(3\*4\) \+ \[\$\!\]\?$/gi);
     });
 
-    it('should replace percentage and undscore with their regex equivalents', function () {
+    it('should replace percentage and underscore with their regex equivalents', function () {
         regExpEqual((0, _evaluateExpression.patternToRegExp)('%C___ing%'), /^.*C...ing.*$/gi);
     });
 });

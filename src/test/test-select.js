@@ -218,6 +218,14 @@ describe('performQuery', () => {
         ]);
     });
 
+    it('should support COUNT(*)', () => {
+        const queryString = 'SELECT COUNT(*), COUNT(number) FROM "test/numbers.csv"';
+        return queryResultsEqual(queryString, [
+            'COUNT(*),COUNT(number)',
+            '9,8',
+        ]);
+    });
+
     it('should support ORDER BY with a direction (ASC)', () => {
 
         const ascQueryString = 'SELECT name FROM "test/test.csv" ORDER BY name ASC';
@@ -294,7 +302,7 @@ describe('patternToRegExp', () => {
         regExpEqual(patternToRegExp('^(3*4) + [$!]?'), /^\^\(3\*4\) \+ \[\$\!\]\?$/gi);
     });
 
-    it('should replace percentage and undscore with their regex equivalents', () => {
+    it('should replace percentage and underscore with their regex equivalents', () => {
         regExpEqual(patternToRegExp('%C___ing%'), /^.*C...ing.*$/gi);
     });
 });

@@ -202,6 +202,20 @@ describe('performQuery', () => {
         ]);
     });
 
+    it('should support basic HAVING clauses', () => {
+        const queryString = `
+            SELECT continent, COUNT(*)
+            FROM "test/countries.csv"
+            GROUP BY continent
+            HAVING COUNT(1) > 3
+        `
+        return queryResultsEqual(queryString, [
+            'continent,COUNT(*)',
+            'Asia,11',
+            'Africa,4',
+        ]);
+    });
+
     it('should support numerical ORDER BY', () => {
         const queryString = 'SELECT number FROM "test/numbers.csv" ORDER BY number';
         return queryResultsEqual(queryString, [

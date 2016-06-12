@@ -112,6 +112,11 @@ describe('performQuery', function () {
         return queryResultsEqual(queryString, ['continent,population > 100000000,COUNT(1)', 'Asia,1,7', 'Asia,0,4', 'North America,1,2', 'South America,1,1', 'Africa,1,1', 'Africa,0,3', 'Europe,1,1', 'Europe,0,2']);
     });
 
+    it('should support basic HAVING clauses', function () {
+        var queryString = '\n            SELECT continent, COUNT(*)\n            FROM "test/countries.csv"\n            GROUP BY continent\n            HAVING COUNT(1) > 3\n        ';
+        return queryResultsEqual(queryString, ['continent,COUNT(*)', 'Asia,11', 'Africa,4']);
+    });
+
     it('should support numerical ORDER BY', function () {
         var queryString = 'SELECT number FROM "test/numbers.csv" ORDER BY number';
         return queryResultsEqual(queryString, ['number', '', '1', '2.25', '2.5', '5', '10', '10', '55', '100']);

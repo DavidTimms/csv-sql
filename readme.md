@@ -13,7 +13,7 @@ Todo
 - [X] `GROUP BY`.
 - [X] Aggregate functions.
 - [X] `COUNT(*)` (synonym for `COUNT(1)`).
-- [ ] `HAVING`.
+- [X] `HAVING`.
 - [ ] `DISTINCT`.
 - [ ] `CASE`.
 - [ ] More built-in functions.

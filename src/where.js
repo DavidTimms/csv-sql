@@ -1,10 +1,10 @@
 
 import {evaluateExpression} from './evaluate-expression';
 
-export function performWhere({where}) {
-    if (!where) return row => row;
+export function performFilter(testExpression) {
+    if (!testExpression) return row => row;
 
     return row => {
-        return evaluateExpression(where, row) ? row : null;
+        return evaluateExpression(testExpression, row) ? row : null;
     }
 }

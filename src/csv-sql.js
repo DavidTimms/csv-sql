@@ -7,7 +7,7 @@ import {preStringify, logStream} from './utils';
 import {parseQuery} from './parser';
 import {identifyAggregatesInQuery} from './aggregates';
 import {performSelect} from './select';
-import {performWhere} from './where';
+import {performFilter} from './where';
 import {GroupingStream} from './group-by';
 import {OrderingStream} from './order-by';
 import {performOffset} from './offset';
@@ -38,10 +38,12 @@ export function performQuery(queryString) {
 
     let resultStream = tableReadStream
         .pipe(csv.parse({columns: true}))
-        .pipe(csv.transform(performWhere(query)));
+        .pipe(csv.transform(performFilter(query.where)));
 
     if (query.aggregates.length > 0 || query.groupBy) {
-        resultStream = resultStream.pipe(new GroupingStream(query));
+        resultStream = resultStream
+            .pipe(new GroupingStream(query))
+            .pipe(csv.transform(performFilter(query.having)));
     }
 
     if (query.orderBy) {

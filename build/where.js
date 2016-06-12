@@ -3,18 +3,16 @@
 Object.defineProperty(exports, '__esModule', {
     value: true
 });
-exports.performWhere = performWhere;
+exports.performFilter = performFilter;
 
 var _evaluateExpression = require('./evaluate-expression');
 
-function performWhere(_ref) {
-    var where = _ref.where;
-
-    if (!where) return function (row) {
+function performFilter(testExpression) {
+    if (!testExpression) return function (row) {
         return row;
     };
 
     return function (row) {
-        return (0, _evaluateExpression.evaluateExpression)(where, row) ? row : null;
+        return (0, _evaluateExpression.evaluateExpression)(testExpression, row) ? row : null;
     };
 }

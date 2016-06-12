@@ -56,10 +56,10 @@ function performQuery(queryString) {
         tableReadStream.destroy();
     }
 
-    var resultStream = tableReadStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _where.performWhere)(query)));
+    var resultStream = tableReadStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _where.performFilter)(query.where)));
 
     if (query.aggregates.length > 0 || query.groupBy) {
-        resultStream = resultStream.pipe(new _groupBy.GroupingStream(query));
+        resultStream = resultStream.pipe(new _groupBy.GroupingStream(query)).pipe(_csv2['default'].transform((0, _where.performFilter)(query.having)));
     }
 
     if (query.orderBy) {

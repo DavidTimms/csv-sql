@@ -94,6 +94,9 @@ function atom([first, ...rest]) {
         if (s === 'TRUE' || s === 'FALSE' || s === 'NULL') {
             return parser(rest, ast.literal(JSON.parse(s.toLowerCase())));
         }
+        else if (first.string === 'CASE') {
+            return caseExpression(rest);
+        }
     }
     // function call
     else if (isType('identifier', first) && isType('parOpen', rest[0])) {
@@ -117,6 +120,33 @@ function atom([first, ...rest]) {
 
     throw SyntaxError(
         `Expected an expression, found "${first.string || '(end of input)'}"`);
+}
+
+function caseExpression(tokens) {
+    return parser(tokens)
+        .ifNextToken(not(isKeyword('WHEN')), curr =>
+            curr.bind('switchExpression', expression)
+        )
+        .bind('cases', many(whenThen, {min: 1}))
+        .ifNextToken(isKeyword('ELSE'), curr =>
+            curr.then(keyword('ELSE'))
+                .bind('elseExpression', expression)
+        )
+        .then(keyword('END'))
+        .mapNode(({switchExpression, cases, elseExpression}) =>
+            switchExpression ?
+                ast.caseSwitch(switchExpression, cases, elseExpression) :
+                ast.caseIf(cases, elseExpression)
+        );
+}
+
+function whenThen(tokens) {
+    return parser(tokens)
+        .then(keyword('WHEN'))
+        .bind('when', expression)
+        .then(keyword('THEN'))
+        .bind('then', expression)
+        .mapNode(node => ast.whenThen(node.when, node.then));
 }
 
 function expression(tokens) {
@@ -218,6 +248,10 @@ function many(parseFunc, {separator, min}={}) {
         }
         return parser(rest, parts);
     };
+}
+
+function not(predicate) {
+    return (...args) => !predicate(...args);
 }
 
 function throwUnexpected(token) {

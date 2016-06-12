@@ -109,6 +109,8 @@ function atom(_ref2) {
         var s = first.string;
         if (s === 'TRUE' || s === 'FALSE' || s === 'NULL') {
             return parser(rest, ast.literal(JSON.parse(s.toLowerCase())));
+        } else if (first.string === 'CASE') {
+            return caseExpression(rest);
         }
     }
     // function call
@@ -141,6 +143,25 @@ function atom(_ref2) {
     throw SyntaxError('Expected an expression, found "' + (first.string || '(end of input)') + '"');
 }
 
+function caseExpression(tokens) {
+    return parser(tokens).ifNextToken(not(isKeyword('WHEN')), function (curr) {
+        return curr.bind('switchExpression', expression);
+    }).bind('cases', many(whenThen, { min: 1 })).ifNextToken(isKeyword('ELSE'), function (curr) {
+        return curr.then(keyword('ELSE')).bind('elseExpression', expression);
+    }).then(keyword('END')).mapNode(function (_ref3) {
+        var switchExpression = _ref3.switchExpression;
+        var cases = _ref3.cases;
+        var elseExpression = _ref3.elseExpression;
+        return switchExpression ? ast.caseSwitch(switchExpression, cases, elseExpression) : ast.caseIf(cases, elseExpression);
+    });
+}
+
+function whenThen(tokens) {
+    return parser(tokens).then(keyword('WHEN')).bind('when', expression).then(keyword('THEN')).bind('then', expression).mapNode(function (node) {
+        return ast.whenThen(node.when, node.then);
+    });
+}
+
 function expression(tokens) {
     return atom(tokens).ifNextToken(isType('operator'), function (curr) {
         return curr.mapNode(function (left) {
@@ -156,9 +177,9 @@ function namedExpression(tokens) {
         return { expression: expression };
     }).ifNextToken(isKeyword('AS'), function (curr) {
         return curr.then(keyword('AS')).bind('name', atom);
-    }).mapNode(function (_ref3) {
-        var expression = _ref3.expression;
-        var name = _ref3.name;
+    }).mapNode(function (_ref4) {
+        var expression = _ref4.expression;
+        var name = _ref4.name;
 
         return ast.namedExpression(expression, name ? name.value : null);
     });
@@ -192,16 +213,16 @@ var parOpen = parseTokenType('parOpen', { expected: 'an opening parenthesis' });
 var parClose = parseTokenType('parClose', { expected: 'a closing parenthesis' });
 
 function parseTokenType(typeName) {
-    var _ref4 = arguments[1] === undefined ? { expected: 'a ' + typeName } : arguments[1];
+    var _ref5 = arguments[1] === undefined ? { expected: 'a ' + typeName } : arguments[1];
 
-    var expected = _ref4.expected;
+    var expected = _ref5.expected;
     return (function () {
-        return function (_ref5) {
-            var _ref52 = _toArray(_ref5);
+        return function (_ref6) {
+            var _ref62 = _toArray(_ref6);
 
-            var first = _ref52[0];
+            var first = _ref62[0];
 
-            var rest = _ref52.slice(1);
+            var rest = _ref62.slice(1);
 
             if (isType(typeName, first)) {
                 return parser(rest, first.value);
@@ -234,10 +255,10 @@ function isType(types, token) {
 }
 
 function many(parseFunc) {
-    var _ref6 = arguments[1] === undefined ? {} : arguments[1];
+    var _ref7 = arguments[1] === undefined ? {} : arguments[1];
 
-    var separator = _ref6.separator;
-    var min = _ref6.min;
+    var separator = _ref7.separator;
+    var min = _ref7.min;
 
     if (min === undefined) min = 1;
     return function (tokens) {
@@ -268,6 +289,16 @@ function many(parseFunc) {
             throwUnexpected(rest[0]);
         }
         return parser(rest, parts);
+    };
+}
+
+function not(predicate) {
+    return function () {
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+        }
+
+        return !predicate.apply(undefined, args);
     };
 }
 

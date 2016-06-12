@@ -278,14 +278,14 @@ describe('parseQuery', () => {
     });
 
     it('should accept a basic ORDER BY clause', () => {
-        const sql = ('SELECT * FROM "a.csv" ORDER BY b');
+        const sql = 'SELECT * FROM "a.csv" ORDER BY b';
         assert.deepEqual(parseQuery(sql).orderBy, [
             ast.orderingTerm(ast.identifier('b'), 'ASC'),
         ]);
     });
 
     it('should accept an ORDER BY clause with multiple terms', () => {
-        const sql = ('SELECT * FROM "a.csv" ORDER BY UPPERCASE(b), c, d = "test"');
+        const sql = 'SELECT * FROM "a.csv" ORDER BY UPPERCASE(b), c, d = "test"';
         assert.deepEqual(parseQuery(sql).orderBy, [
             ast.orderingTerm(ast.call('UPPERCASE', [ast.identifier('b')])),
             ast.orderingTerm(ast.identifier('c')),
@@ -296,13 +296,52 @@ describe('parseQuery', () => {
     });
 
     it('should accept an ORDER BY clause with a direction', () => {
-        const sql = ('SELECT * FROM "a.csv" ORDER BY b DESC');
+        const sql = 'SELECT * FROM "a.csv" ORDER BY b DESC';
         assert.deepEqual(parseQuery(sql).orderBy[0].direction, 'desc');
     });
 
     it('should accept an ORDER BY clause with mixed directions', () => {
-        const sql = ('SELECT * FROM "a.csv" ORDER BY b DESC, c ASC');
+        const sql = 'SELECT * FROM "a.csv" ORDER BY b DESC, c ASC';
         assert.deepEqual(parseQuery(sql).orderBy[0].direction, 'desc');
         assert.deepEqual(parseQuery(sql).orderBy[1].direction, 'asc');
+    });
+
+
+    it('should accept a if-style CASE expression, without an ELSE part', () => {
+        const sql = 'SELECT CASE WHEN a THEN b END FROM "a.csv"';
+        assert.deepEqual(parseQuery(sql).select[0].expression, 
+            ast.caseIf([
+                ast.whenThen(ast.identifier('a'), ast.identifier('b')),
+            ])
+        );
+    });
+
+    it('should accept a if-style CASE expression, with an ELSE part', () => {
+        const sql = 'SELECT CASE WHEN a THEN b ELSE c END FROM "a.csv"';
+        assert.deepEqual(parseQuery(sql).select[0].expression, 
+            ast.caseIf([
+                ast.whenThen(ast.identifier('a'), ast.identifier('b')),
+            ], ast.identifier('c'))
+        );
+    });
+
+    it('should accept a if-style CASE expression with multiple cases', () => {
+        const sql = 'SELECT CASE WHEN a THEN b WHEN c THEN d END FROM "a.csv"';
+        assert.deepEqual(parseQuery(sql).select[0].expression, 
+            ast.caseIf([
+                ast.whenThen(ast.identifier('a'), ast.identifier('b')),
+                ast.whenThen(ast.identifier('c'), ast.identifier('d')),
+            ])
+        );
+    });
+
+    it('should accept a switch-style CASE expression', () => {
+        const sql = 'SELECT CASE a WHEN b THEN c WHEN d THEN e END FROM "a.csv"';
+        assert.deepEqual(parseQuery(sql).select[0].expression, 
+            ast.caseSwitch(ast.identifier('a'), [
+                ast.whenThen(ast.identifier('b'), ast.identifier('c')),
+                ast.whenThen(ast.identifier('d'), ast.identifier('e')),
+            ])
+        );
     });
 });

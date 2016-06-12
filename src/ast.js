@@ -83,6 +83,45 @@ export function binaryExpression(operator, left, right) {
     }
 }
 
+export function caseIf(cases, elseExpression=null) {
+    const node = {
+        type: 'caseIf',
+        cases,
+        elseExpression,
+    };
+
+    node.string = caseString(node);
+    return node;
+}
+
+export function caseSwitch(switchExpression, cases, elseExpression=null) {
+    const node = {
+        type: 'caseSwitch',
+        switchExpression,
+        cases,
+        elseExpression,
+    };
+
+    node.string = caseString(node);
+    return node;
+}
+
+function caseString({switchExpression, cases, elseExpression}) {
+    const switchString = switchExpression ? ` ${switchExpression.string}` : '';
+    const elseString = elseExpression ? ` ELSE ${elseExpression.string}` : '';
+
+    return `CASE${switchString} ${cases.map(c => c.string).join(' ')}${elseString} END`;
+}
+
+export function whenThen(when, then) {
+    return {
+        type: 'whenThen',
+        when,
+        then,
+        string: `WHEN ${when.string} THEN ${then.string}`,
+    }
+}
+
 export function namedExpression(expression, name=null) {
     if (!name) {
         name = expression.type === 'identifier' ? expression.value : expression.string;

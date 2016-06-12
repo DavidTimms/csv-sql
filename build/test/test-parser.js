@@ -180,4 +180,24 @@ describe('parseQuery', function () {
         _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy[0].direction, 'desc');
         _chai.assert.deepEqual((0, _parser.parseQuery)(sql).orderBy[1].direction, 'asc');
     });
+
+    it('should accept a if-style CASE expression, without an ELSE part', function () {
+        var sql = 'SELECT CASE WHEN a THEN b END FROM "a.csv"';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).select[0].expression, ast.caseIf([ast.whenThen(ast.identifier('a'), ast.identifier('b'))]));
+    });
+
+    it('should accept a if-style CASE expression, with an ELSE part', function () {
+        var sql = 'SELECT CASE WHEN a THEN b ELSE c END FROM "a.csv"';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).select[0].expression, ast.caseIf([ast.whenThen(ast.identifier('a'), ast.identifier('b'))], ast.identifier('c')));
+    });
+
+    it('should accept a if-style CASE expression with multiple cases', function () {
+        var sql = 'SELECT CASE WHEN a THEN b WHEN c THEN d END FROM "a.csv"';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).select[0].expression, ast.caseIf([ast.whenThen(ast.identifier('a'), ast.identifier('b')), ast.whenThen(ast.identifier('c'), ast.identifier('d'))]));
+    });
+
+    it('should accept a switch-style CASE expression', function () {
+        var sql = 'SELECT CASE a WHEN b THEN c WHEN d THEN e END FROM "a.csv"';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).select[0].expression, ast.caseSwitch(ast.identifier('a'), [ast.whenThen(ast.identifier('b'), ast.identifier('c')), ast.whenThen(ast.identifier('d'), ast.identifier('e'))]));
+    });
 });

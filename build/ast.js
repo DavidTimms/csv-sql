@@ -10,6 +10,9 @@ exports.number = number;
 exports.call = call;
 exports.aggregate = aggregate;
 exports.binaryExpression = binaryExpression;
+exports.caseIf = caseIf;
+exports.caseSwitch = caseSwitch;
+exports.whenThen = whenThen;
 exports.namedExpression = namedExpression;
 exports.orderingTerm = orderingTerm;
 exports.query = query;
@@ -112,6 +115,52 @@ function binaryExpression(operator, left, right) {
         string: '' + parenWrap(left) + ' ' + operator + ' ' + parenWrap(right) };
 }
 
+function caseIf(cases) {
+    var elseExpression = arguments[1] === undefined ? null : arguments[1];
+
+    var node = {
+        type: 'caseIf',
+        cases: cases,
+        elseExpression: elseExpression };
+
+    node.string = caseString(node);
+    return node;
+}
+
+function caseSwitch(switchExpression, cases) {
+    var elseExpression = arguments[2] === undefined ? null : arguments[2];
+
+    var node = {
+        type: 'caseSwitch',
+        switchExpression: switchExpression,
+        cases: cases,
+        elseExpression: elseExpression };
+
+    node.string = caseString(node);
+    return node;
+}
+
+function caseString(_ref) {
+    var switchExpression = _ref.switchExpression;
+    var cases = _ref.cases;
+    var elseExpression = _ref.elseExpression;
+
+    var switchString = switchExpression ? ' ' + switchExpression.string : '';
+    var elseString = elseExpression ? ' ELSE ' + elseExpression.string : '';
+
+    return 'CASE' + switchString + ' ' + cases.map(function (c) {
+        return c.string;
+    }).join(' ') + '' + elseString + ' END';
+}
+
+function whenThen(when, then) {
+    return {
+        type: 'whenThen',
+        when: when,
+        then: then,
+        string: 'WHEN ' + when.string + ' THEN ' + then.string };
+}
+
 function namedExpression(expression) {
     var name = arguments[1] === undefined ? null : arguments[1];
 
@@ -133,23 +182,23 @@ function orderingTerm(expression) {
         direction: direction.toLowerCase() };
 }
 
-function query(_ref) {
-    var select = _ref.select;
-    var from = _ref.from;
-    var _ref$where = _ref.where;
-    var where = _ref$where === undefined ? null : _ref$where;
-    var _ref$groupBy = _ref.groupBy;
-    var groupBy = _ref$groupBy === undefined ? null : _ref$groupBy;
-    var _ref$having = _ref.having;
-    var having = _ref$having === undefined ? null : _ref$having;
-    var _ref$orderBy = _ref.orderBy;
-    var orderBy = _ref$orderBy === undefined ? null : _ref$orderBy;
-    var _ref$limit = _ref.limit;
-    var limit = _ref$limit === undefined ? null : _ref$limit;
-    var _ref$offset = _ref.offset;
-    var offset = _ref$offset === undefined ? null : _ref$offset;
-    var _ref$aggregates = _ref.aggregates;
-    var aggregates = _ref$aggregates === undefined ? null : _ref$aggregates;
+function query(_ref2) {
+    var select = _ref2.select;
+    var from = _ref2.from;
+    var _ref2$where = _ref2.where;
+    var where = _ref2$where === undefined ? null : _ref2$where;
+    var _ref2$groupBy = _ref2.groupBy;
+    var groupBy = _ref2$groupBy === undefined ? null : _ref2$groupBy;
+    var _ref2$having = _ref2.having;
+    var having = _ref2$having === undefined ? null : _ref2$having;
+    var _ref2$orderBy = _ref2.orderBy;
+    var orderBy = _ref2$orderBy === undefined ? null : _ref2$orderBy;
+    var _ref2$limit = _ref2.limit;
+    var limit = _ref2$limit === undefined ? null : _ref2$limit;
+    var _ref2$offset = _ref2.offset;
+    var offset = _ref2$offset === undefined ? null : _ref2$offset;
+    var _ref2$aggregates = _ref2.aggregates;
+    var aggregates = _ref2$aggregates === undefined ? null : _ref2$aggregates;
 
     return {
         select: select,

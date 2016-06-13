@@ -163,6 +163,26 @@ describe('performQuery', function () {
         var fixedLengthQuery = 'SELECT name FROM "test/test.csv" WHERE name LIKE "J_n_y B____s"';
         return queryResultsEqual(fixedLengthQuery, ['name', 'Jenny Bloggs']);
     });
+
+    it('should support if-style CASE expressions, with an ELSE', function () {
+        var caseQuery = '\n            SELECT\n                CASE WHEN age < 25 THEN "young" ELSE "old" END AS age_group\n            FROM "test/test.csv"\n        ';
+        return queryResultsEqual(caseQuery, ['age_group', 'young', 'old', 'old']);
+    });
+
+    it('should support if-style CASE expressions with many cases', function () {
+        var caseQuery = '\n            SELECT\n                CASE \n                    WHEN name = "David Timms" THEN "Dave"\n                    WHEN name = "Bob Jones" THEN "Bob"\n                    WHEN name = "Jenny Bloggs" THEN "Jen"\n                END AS nickname\n            FROM "test/test.csv"\n        ';
+        return queryResultsEqual(caseQuery, ['nickname', 'Dave', 'Bob', 'Jen']);
+    });
+
+    it('should support switch-style CASE expressions, with an ELSE', function () {
+        var caseQuery = '\n            SELECT\n                CASE gender WHEN "M" THEN "Male" ELSE "Female" END AS gender\n            FROM "test/test.csv"\n        ';
+        return queryResultsEqual(caseQuery, ['gender', 'Male', 'Male', 'Female']);
+    });
+
+    it('should default to NULL for CASE expressions without an ELSE', function () {
+        var caseQuery = '\n            SELECT\n                CASE name WHEN "Jenny Bloggs" THEN "Hello Jenny" END AS greeting\n            FROM "test/test.csv"\n        ';
+        return queryResultsEqual(caseQuery, ['greeting', '', '', 'Hello Jenny']);
+    });
 });
 
 describe('patternToRegExp', function () {

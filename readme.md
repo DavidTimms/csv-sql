@@ -15,6 +15,6 @@ Todo
 - [X] `COUNT(*)` (synonym for `COUNT(1)`).
 - [X] `HAVING`.
 - [ ] `DISTINCT`.
-- [ ] `CASE`.
+- [X] `CASE`.
 - [ ] More built-in functions.
 - [ ] User-defined functions provided through node modules.

@@ -305,6 +305,66 @@ describe('performQuery', () => {
             'Jenny Bloggs',
         ]);
     });
+
+    it('should support if-style CASE expressions, with an ELSE', () => {
+        const caseQuery = `
+            SELECT
+                CASE WHEN age < 25 THEN "young" ELSE "old" END AS age_group
+            FROM "test/test.csv"
+        `;
+        return queryResultsEqual(caseQuery, [
+            'age_group',
+            'young',
+            'old',
+            'old',
+        ]);
+    });
+
+    it('should support if-style CASE expressions with many cases', () => {
+        const caseQuery = `
+            SELECT
+                CASE 
+                    WHEN name = "David Timms" THEN "Dave"
+                    WHEN name = "Bob Jones" THEN "Bob"
+                    WHEN name = "Jenny Bloggs" THEN "Jen"
+                END AS nickname
+            FROM "test/test.csv"
+        `;
+        return queryResultsEqual(caseQuery, [
+            'nickname',
+            'Dave',
+            'Bob',
+            'Jen',
+        ]);
+    });
+
+    it('should support switch-style CASE expressions, with an ELSE', () => {
+        const caseQuery = `
+            SELECT
+                CASE gender WHEN "M" THEN "Male" ELSE "Female" END AS gender
+            FROM "test/test.csv"
+        `;
+        return queryResultsEqual(caseQuery, [
+            'gender',
+            'Male',
+            'Male',
+            'Female',
+        ]);
+    });
+
+    it('should default to NULL for CASE expressions without an ELSE', () => {
+        const caseQuery = `
+            SELECT
+                CASE name WHEN "Jenny Bloggs" THEN "Hello Jenny" END AS greeting
+            FROM "test/test.csv"
+        `;
+        return queryResultsEqual(caseQuery, [
+            'greeting',
+            '',
+            '',
+            'Hello Jenny',
+        ]);
+    });
 });
 
 describe('patternToRegExp', () => {

@@ -36,6 +36,10 @@ function evaluateExpression(exp, context) {
             return performBinaryOperation(exp.operator, evaluateExpression(exp.left, context), evaluateExpression(exp.right, context));
         case 'aggregate':
             return context._aggregateValues[exp.id];
+        case 'caseIf':
+            return evaluateCaseIf(exp, context);
+        case 'caseSwitch':
+            return evaluateCaseSwitch(exp, context);
         default:
             throw Error('Unexpected expression type: ' + exp.type);
     }
@@ -65,6 +69,43 @@ function performBinaryOperation(operator, left, right) {
             return str(left).search(patternToRegExp(right)) !== -1;
         default:
             throw Error('Unknown operator: ' + operator);
+    }
+}
+
+function evaluateCaseIf(_ref, context) {
+    var cases = _ref.cases;
+    var elseExpression = _ref.elseExpression;
+
+    for (var i = 0; i < cases.length; i++) {
+        if (evaluateExpression(cases[i].when, context)) {
+            return evaluateExpression(cases[i].then, context);
+        }
+    }
+
+    if (elseExpression) {
+        return evaluateExpression(elseExpression, null);
+    } else {
+        return null;
+    }
+}
+
+function evaluateCaseSwitch(_ref2, context) {
+    var switchExpression = _ref2.switchExpression;
+    var cases = _ref2.cases;
+    var elseExpression = _ref2.elseExpression;
+
+    var switchValue = evaluateExpression(switchExpression, context);
+
+    for (var i = 0; i < cases.length; i++) {
+        if (evaluateExpression(cases[i].when, context) === switchValue) {
+            return evaluateExpression(cases[i].then, context);
+        }
+    }
+
+    if (elseExpression) {
+        return evaluateExpression(elseExpression, null);
+    } else {
+        return null;
     }
 }
 

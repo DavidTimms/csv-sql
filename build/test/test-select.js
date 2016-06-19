@@ -8,8 +8,14 @@ var _evaluateExpression = require('../evaluate-expression');
 
 var _utils = require('../utils');
 
-function queryResults(queryString, callback) {
-    var stream = (0, _csvSql.toCSV)((0, _csvSql.performQuery)(queryString));
+function queryResults(queryString, options, callback) {
+    // The `options` argument can be omitted, if only the default
+    // options are required
+    if (typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
+    var stream = (0, _csvSql.toCSV)((0, _csvSql.performQuery)(queryString, options), options);
     var results = [];
 
     stream.on('data', function (data) {

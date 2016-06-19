@@ -1,6 +1,6 @@
 {
   "name": "csv-sql",
-  "version": "0.0.1",
+  "version": "0.0.9",
   "description": "A command line tool for running SQL queries on CSV files.",
   "main": "csv-sql.js",
   "scripts": {
@@ -15,6 +15,7 @@
   "author": "David Timms",
   "license": "ISC",
   "dependencies": {
+    "commander": "^2.9.0",
     "csv": "^0.4.6"
   },
   "devDependencies": {

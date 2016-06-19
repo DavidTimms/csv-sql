@@ -8,8 +8,6 @@ exports.toCSV = toCSV;
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
-
 var _fs = require('fs');
 
 var _fs2 = _interopRequireDefault(_fs);
@@ -17,6 +15,14 @@ var _fs2 = _interopRequireDefault(_fs);
 var _csv = require('csv');
 
 var _csv2 = _interopRequireDefault(_csv);
+
+var _commander = require('commander');
+
+var _commander2 = _interopRequireDefault(_commander);
+
+var _packageJson = require('../package.json');
+
+var _packageJson2 = _interopRequireDefault(_packageJson);
 
 var _utils = require('./utils');
 
@@ -36,7 +42,7 @@ var _offset = require('./offset');
 
 var _limit = require('./limit');
 
-function performQuery(queryString) {
+function performQuery(queryString, options) {
     var query = (0, _aggregates.identifyAggregatesInQuery)((0, _parser.parseQuery)(queryString));
     //console.log(JSON.stringify(query, null, 4));
 
@@ -56,7 +62,9 @@ function performQuery(queryString) {
         tableReadStream.destroy();
     }
 
-    var resultStream = tableReadStream.pipe(_csv2['default'].parse({ columns: true })).pipe(_csv2['default'].transform((0, _where.performFilter)(query.where)));
+    var resultStream = tableReadStream.pipe(_csv2['default'].parse({
+        columns: true,
+        delimiter: options.inSeparator })).pipe(_csv2['default'].transform((0, _where.performFilter)(query.where)));
 
     if (query.aggregates.length > 0 || query.groupBy) {
         resultStream = resultStream.pipe(new _groupBy.GroupingStream(query)).pipe(_csv2['default'].transform((0, _where.performFilter)(query.having)));
@@ -71,19 +79,25 @@ function performQuery(queryString) {
     return resultStream;
 }
 
-function toCSV(rowStream) {
-    return rowStream.pipe((0, _utils.preStringify)()).pipe(_csv2['default'].stringify({ header: true }));
+function toCSV(rowStream, options) {
+    return rowStream.pipe((0, _utils.preStringify)()).pipe(_csv2['default'].stringify({
+        header: true,
+        delimiter: options.outSeparator }));
 }
 
-function startRepl() {
+function startRepl(options) {
     var repl = require('repl');
     var replHistory = require('repl.history');
 
     var sqlRepl = repl.start({
         eval: function _eval(queryString, context, filename, callback) {
-            var resultStream = performQuery(queryString);
+            if (queryString.toLowerCase().trim() === 'exit') {
+                process.exit();
+            }
 
-            toCSV(resultStream).pipe(process.stdout);
+            var resultStream = performQuery(queryString, options);
+
+            toCSV(resultStream, options).pipe(process.stdout);
 
             resultStream.on('end', function () {
                 callback(null, undefined);
@@ -95,10 +109,19 @@ function startRepl() {
 }
 
 if (!module.parent) {
-    if (process.argv.length > 2) {
-        toCSV(performQuery.apply(undefined, _toConsumableArray(process.argv.slice(2)))).pipe(process.stdout);
+
+    _commander2['default'].version(_packageJson2['default'].version).description(_packageJson2['default'].description).arguments('<query>').option('-s, --separator [string]', 'The CSV column separator for input and output').option('--in-separator [string]', 'The CSV column separator for reading input').option('--out-separator [string]', 'The CSV column separator for generating output').parse(process.argv);
+
+    var options = _commander2['default'];
+    var query = options.args[0];
+
+    options.inSeparator = options.inSeparator || options.separator;
+    options.outSeparator = options.outSeparator || options.separator;
+
+    if (query) {
+        toCSV(performQuery(query, options), options).pipe(process.stdout);
     } else {
         // Start a REPL if no arguments have been provided
-        startRepl();
+        startRepl(options);
     }
 }

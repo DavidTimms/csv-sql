@@ -4,8 +4,14 @@ import {performQuery, toCSV} from '../csv-sql';
 import {patternToRegExp} from '../evaluate-expression';
 import {logStream} from '../utils';
 
-function queryResults(queryString, callback) {
-    const stream = toCSV(performQuery(queryString));
+function queryResults(queryString, options, callback) {
+    // The `options` argument can be omitted, if only the default
+    // options are required
+    if (typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
+    const stream = toCSV(performQuery(queryString, options), options);
     const results = [];
 
     stream.on('data', data => {

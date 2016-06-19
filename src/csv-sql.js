@@ -1,6 +1,9 @@
 import fs from 'fs';
 
 import csv from 'csv';
+import commander from 'commander';
+
+import project from '../package.json';
 
 import {preStringify, logStream} from './utils';
 
@@ -13,7 +16,7 @@ import {OrderingStream} from './order-by';
 import {performOffset} from './offset';
 import {performLimit} from './limit';
 
-export function performQuery(queryString) {
+export function performQuery(queryString, options) {
     const query = identifyAggregatesInQuery(parseQuery(queryString));
     //console.log(JSON.stringify(query, null, 4));
 
@@ -37,7 +40,10 @@ export function performQuery(queryString) {
     }
 
     let resultStream = tableReadStream
-        .pipe(csv.parse({columns: true}))
+        .pipe(csv.parse({
+            columns: true,
+            delimiter: options.inSeparator,
+        }))
         .pipe(csv.transform(performFilter(query.where)));
 
     if (query.aggregates.length > 0 || query.groupBy) {
@@ -58,19 +64,26 @@ export function performQuery(queryString) {
     return resultStream;
 }
 
-export function toCSV(rowStream) {
-    return rowStream.pipe(preStringify()).pipe(csv.stringify({header: true}));
+export function toCSV(rowStream, options) {
+    return rowStream.pipe(preStringify()).pipe(csv.stringify({
+        header: true,
+        delimiter: options.outSeparator,
+    }));
 }
 
-function startRepl() {
+function startRepl(options) {
     const repl = require('repl');
     const replHistory = require('repl.history');
 
     const sqlRepl = repl.start({
         eval: function _eval(queryString, context, filename, callback) {
-            const resultStream = performQuery(queryString);
+            if (queryString.toLowerCase().trim() === 'exit') {
+                process.exit();
+            }
 
-            toCSV(resultStream)
+            const resultStream = performQuery(queryString, options);
+
+            toCSV(resultStream, options)
                 .pipe(process.stdout);
 
             resultStream.on('end', () => {
@@ -85,12 +98,37 @@ function startRepl() {
 
 
 if (!module.parent) {
-    if (process.argv.length > 2) {
-        toCSV(performQuery(...process.argv.slice(2)))
+
+    commander
+        .version(project.version)
+        .description(project.description)
+        .arguments('<query>')
+        .option(
+            '-s, --separator [string]', 
+            'The CSV column separator for input and output'
+        )
+        .option(
+            '--in-separator [string]', 
+            'The CSV column separator for reading input'
+        )
+        .option(
+            '--out-separator [string]', 
+            'The CSV column separator for generating output'
+        )
+        .parse(process.argv);
+
+    const options = commander;
+    const query = options.args[0];
+
+    options.inSeparator = options.inSeparator || options.separator;
+    options.outSeparator = options.outSeparator || options.separator;
+
+    if (query) {
+        toCSV(performQuery(query, options), options)
             .pipe(process.stdout);
     }
     else {
         // Start a REPL if no arguments have been provided
-        startRepl();
+        startRepl(options);
     }
 }

@@ -1,4 +1,5 @@
 import {merge, md5} from './utils';
+import {OPERATORS} from './operators';
 
 export function literal(value) {
     return {
@@ -28,12 +29,23 @@ function tokenMaker(type, defaultString = null) {
 }
 
 export const keyword = tokenMaker('keyword');
-export const operator = tokenMaker('operator');
 export const parOpen = tokenMaker('parOpen', '(');
 export const parClose = tokenMaker('parClose', ')');
 export const star = tokenMaker('star', '*');
 export const comma = tokenMaker('comma', ',');
 export const semicolon = tokenMaker('semicolon', ';');
+
+export function operator(s) {
+    const upper = s.toUpperCase();
+
+    return {
+        type: 'operator',
+        string: upper,
+        value: upper,
+        precedence: OPERATORS[upper].precedence,
+        associativity: OPERATORS[upper].associativity,
+    }
+}
 
 export function identifier(value) {
     let string = value;

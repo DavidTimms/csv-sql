@@ -12,6 +12,8 @@ var _utils = require('./utils');
 
 var _tokenizer = require('./tokenizer');
 
+var _operators = require('./operators');
+
 var _ast = require('./ast');
 
 var ast = _interopRequireWildcard(_ast);
@@ -167,13 +169,34 @@ function whenThen(tokens) {
 }
 
 function expression(tokens) {
-    return atom(tokens).ifNextToken(isType('operator'), function (curr) {
-        return curr.mapNode(function (left) {
+    var controlOperator = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+
+
+    var parser = atom(tokens);
+
+    var _loop = function _loop() {
+        var token = parser.rest[0];
+
+        var tokenIsLesserOperator = token && token.type === 'operator' && (controlOperator === null || token.precedence > controlOperator.precedence || token.precedence === controlOperator.precedence && controlOperator.associativity === _operators.RIGHT);
+
+        if (!tokenIsLesserOperator) return {
+                v: parser
+            };
+
+        parser = parser.mapNode(function (left) {
             return { left: left };
-        }).bind('operator', operator).bind('right', expression).mapNode(function (node) {
+        }).bind('operator', operator).bind('right', function (tokens) {
+            return expression(tokens, token);
+        }).mapNode(function (node) {
             return ast.binaryExpression(node.operator, node.left, node.right);
         });
-    });
+    };
+
+    while (true) {
+        var _ret2 = _loop();
+
+        if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
+    }
 }
 
 function namedExpression(tokens) {
@@ -307,6 +330,12 @@ function many(parseFunc) {
 function not(predicate) {
     return function () {
         return !predicate.apply(undefined, arguments);
+    };
+}
+
+function and(predicate1, predicate2) {
+    return function () {
+        return predicate1.apply(undefined, arguments) && predicate2.apply(undefined, arguments);
     };
 }
 

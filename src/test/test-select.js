@@ -86,7 +86,7 @@ describe('performQuery', () => {
     });
 
     it('should support WHERE with multiple conditions', () => {
-        const queryString = 'SELECT name FROM "test/test.csv" WHERE (LOWERCASE(gender) = "m") AND age < 27';
+        const queryString = 'SELECT name FROM "test/test.csv" WHERE LOWERCASE(gender) = "m" AND age < 27';
         return queryResultsEqual(queryString, [
             'name',
             'David Timms',

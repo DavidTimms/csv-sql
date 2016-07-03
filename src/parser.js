@@ -1,5 +1,6 @@
 import {merge} from './utils';
 import {tokenize} from './tokenizer';
+import {LEFT, RIGHT} from './operators';
 import * as ast from './ast';
 
 
@@ -149,13 +150,33 @@ function whenThen(tokens) {
         .mapNode(node => ast.whenThen(node.when, node.then));
 }
 
-function expression(tokens) {
-    return atom(tokens).ifNextToken(isType('operator'), curr => 
-        curr.mapNode(left => ({left}))
+function expression(tokens, controlOperator=null) {
+
+    let parser = atom(tokens);
+
+    while (true) {
+        const token = parser.rest[0];
+
+        const tokenIsLesserOperator = (
+            token &&
+            token.type === 'operator' && (
+                controlOperator === null ||
+                token.precedence > controlOperator.precedence || (
+                    token.precedence === controlOperator.precedence && 
+                    controlOperator.associativity === RIGHT
+                )
+            )
+        );
+        
+        if (!tokenIsLesserOperator) return parser;
+
+        parser = parser
+            .mapNode(left => ({left}))
             .bind('operator', operator)
-            .bind('right', expression)
-            .mapNode(node => ast.binaryExpression(node.operator, node.left, node.right))
-    );
+            .bind('right', tokens => expression(tokens, token))
+            .mapNode(node => ast.binaryExpression(node.operator, node.left, node.right));
+
+    }
 }
 
 function namedExpression(tokens) {
@@ -261,6 +282,10 @@ function many(parseFunc, {separator, min}={}) {
 
 function not(predicate) {
     return (...args) => !predicate(...args);
+}
+
+function and(predicate1, predicate2) {
+    return (...args) => predicate1(...args) && predicate2(...args);
 }
 
 function throwUnexpected(token) {

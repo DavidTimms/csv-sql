@@ -14,6 +14,10 @@ var ast = _interopRequireWildcard(_ast);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
+// TODO generate operator regex from operator table in operators.js
+// and handle keyword operators like normal operators, rather than
+// matching them as identifiers then converting to operators later
+
 var tokenTypes = {
     identifier: /^[a-z_]\w*/i,
     parOpen: /^\(/,
@@ -82,10 +86,6 @@ function processRawToken(rest, token) {
             }
             break;
 
-        case 'number':
-            token = ast.number(token.string);
-            break;
-
         case 'string':
             var _takeStringLiteral = takeStringLiteral(token.string)(rest);
 
@@ -97,7 +97,7 @@ function processRawToken(rest, token) {
             break;
 
         default:
-        // do nothing
+            token = ast[token.type](token.string);
     }
 
     return [rest, token];

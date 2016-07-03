@@ -69,7 +69,7 @@ describe('performQuery', function () {
     });
 
     it('should support WHERE with multiple conditions', function () {
-        var queryString = 'SELECT name FROM "test/test.csv" WHERE (LOWERCASE(gender) = "m") AND age < 27';
+        var queryString = 'SELECT name FROM "test/test.csv" WHERE LOWERCASE(gender) = "m" AND age < 27';
         return queryResultsEqual(queryString, ['name', 'David Timms']);
     });
 

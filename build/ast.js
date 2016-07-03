@@ -3,9 +3,10 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.semicolon = exports.comma = exports.star = exports.parClose = exports.parOpen = exports.operator = exports.keyword = undefined;
+exports.semicolon = exports.comma = exports.star = exports.parClose = exports.parOpen = exports.keyword = undefined;
 exports.literal = literal;
 exports.string = string;
+exports.operator = operator;
 exports.identifier = identifier;
 exports.number = number;
 exports.call = call;
@@ -19,6 +20,8 @@ exports.orderingTerm = orderingTerm;
 exports.query = query;
 
 var _utils = require('./utils');
+
+var _operators = require('./operators');
 
 function literal(value) {
     return {
@@ -52,12 +55,23 @@ function tokenMaker(type) {
 }
 
 var keyword = exports.keyword = tokenMaker('keyword');
-var operator = exports.operator = tokenMaker('operator');
 var parOpen = exports.parOpen = tokenMaker('parOpen', '(');
 var parClose = exports.parClose = tokenMaker('parClose', ')');
 var star = exports.star = tokenMaker('star', '*');
 var comma = exports.comma = tokenMaker('comma', ',');
 var semicolon = exports.semicolon = tokenMaker('semicolon', ';');
+
+function operator(s) {
+    var upper = s.toUpperCase();
+
+    return {
+        type: 'operator',
+        string: upper,
+        value: upper,
+        precedence: _operators.OPERATORS[upper].precedence,
+        associativity: _operators.OPERATORS[upper].associativity
+    };
+}
 
 function identifier(value) {
     var string = value;

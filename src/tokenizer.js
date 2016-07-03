@@ -1,6 +1,10 @@
 import * as ast from './ast';
 
 
+// TODO generate operator regex from operator table in operators.js
+// and handle keyword operators like normal operators, rather than
+// matching them as identifiers then converting to operators later
+
 const tokenTypes = {
     identifier: /^[a-z_]\w*/i,
     parOpen: /^\(/,
@@ -93,16 +97,12 @@ function processRawToken(rest, token) {
             }
             break;
 
-        case 'number':
-            token = ast.number(token.string);
-            break;
-
         case 'string':
             [rest, token] = takeStringLiteral(token.string)(rest);
             break;
 
         default:
-            // do nothing
+            token = ast[token.type](token.string);
     }
 
     return [rest, token];

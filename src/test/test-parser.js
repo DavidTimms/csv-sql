@@ -211,7 +211,7 @@ describe('parseQuery', () => {
         ]);
     });
 
-    it('should support correct operator precedence'); (() => {
+    it('should support correct operator precedence', () => {
         const sql = 'SELECT 1 * 2 + 3 > 4 OR a = b = TRUE FROM "a.csv"';
         assert.deepEqual(parseQuery(sql).select, [
             ast.namedExpression(
@@ -220,13 +220,13 @@ describe('parseQuery', () => {
                     ast.binaryExpression(
                         '>',
                         ast.binaryExpression(
-                            '*',
-                            ast.number(1),
+                            '+',
                             ast.binaryExpression(
-                                '+',
-                                ast.number(2),
-                                ast.number(3)
-                            )
+                                '*',
+                                ast.number(1),
+                                ast.number(2)
+                            ),
+                            ast.number(3)
                         ),
                         ast.number(4)
                     ),

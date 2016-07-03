@@ -91,6 +91,13 @@ function startRepl(options) {
                 process.exit();
             }
 
+            if (queryString.match(/^\s*$/)) {
+                callback(null, undefined);
+                return;
+            }
+
+            console.log(JSON.stringify(queryString));
+
             const resultStream = performQuery(queryString, options);
 
             toCSV(resultStream, options)
@@ -107,7 +114,7 @@ function startRepl(options) {
 }
 
 
-if (!module.parent) {
+export function cli() {
 
     commander
         .version(project.version)

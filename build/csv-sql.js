@@ -5,6 +5,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.performQuery = performQuery;
 exports.toCSV = toCSV;
+exports.cli = cli;
 
 var _fs = require('fs');
 
@@ -110,6 +111,13 @@ function startRepl(options) {
                 process.exit();
             }
 
+            if (queryString.match(/^\s*$/)) {
+                callback(null, undefined);
+                return;
+            }
+
+            console.log(JSON.stringify(queryString));
+
             var resultStream = performQuery(queryString, options);
 
             toCSV(resultStream, options).pipe(process.stdout);
@@ -124,7 +132,7 @@ function startRepl(options) {
     replHistory(sqlRepl, __dirname + '/.repl_history');
 }
 
-if (!module.parent) {
+function cli() {
 
     _commander2.default.version(_package2.default.version).description(_package2.default.description).arguments('<query>').option('-s, --separator [string]', 'The CSV column separator for input and output').option('--in-separator [string]', 'The CSV column separator for reading input').option('--out-separator [string]', 'The CSV column separator for generating output').parse(process.argv);
 

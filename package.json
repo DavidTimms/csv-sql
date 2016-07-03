@@ -3,6 +3,9 @@
   "version": "0.0.9",
   "description": "A command line tool for running SQL queries on CSV files.",
   "main": "csv-sql.js",
+  "bin": {
+    "csv-sql": "./cli.js"
+  },
   "scripts": {
     "test": "cd ./build && mocha",
     "build": "babel src --out-dir build",
@@ -14,6 +17,7 @@
   ],
   "author": "David Timms",
   "license": "ISC",
+  "repository": "DavidTimms/csv-sql",
   "dependencies": {
     "commander": "^2.9.0",
     "csv": "^0.4.6"

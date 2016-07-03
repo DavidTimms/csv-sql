@@ -122,7 +122,7 @@ function atom(_ref) {
                 var _ret = function () {
                     var functionName = first.value;
 
-                    if (functionName.toUpperCase() === 'COUNT' && isType('star', rest[1])) {
+                    if (functionName.toUpperCase() === 'COUNT' && isStar(rest[1])) {
                         return {
                             v: parser(rest.slice(2)).then(parClose).mapNode(function (node) {
                                 return ast.call(functionName, [ast.star()]);
@@ -190,7 +190,7 @@ function namedExpression(tokens) {
 }
 
 function outputColumns(tokens) {
-    if (isType('star', tokens[0])) {
+    if (isStar(tokens[0])) {
         return parser(tokens.slice(1), '*');
     }
     return many(namedExpression, { separator: comma })(tokens);
@@ -257,6 +257,10 @@ function isType(types, token) {
     });
 }
 
+function isStar(token) {
+    return token && token.string === '*';
+}
+
 function many(parseFunc) {
     var _ref8 = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
@@ -268,6 +272,11 @@ function many(parseFunc) {
         var node = void 0,
             rest = tokens;
         var parts = [];
+
+        // TODO refactor this function to provide better error messages for
+        // sequences with a minimum - i.e. don't swallow the errors until
+        // the minimum is reached
+
         try {
             for (var i = 0; rest.length > 0; i++) {
                 if (separator && i > 0) {

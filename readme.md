@@ -16,5 +16,7 @@ Todo
 - [X] `HAVING`.
 - [ ] `DISTINCT`.
 - [X] `CASE`.
+- [ ] `IN` operator.
 - [ ] More built-in functions.
 - [ ] User-defined functions provided through node modules.
+- [ ] Improved error messages.

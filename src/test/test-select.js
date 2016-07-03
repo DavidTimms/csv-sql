@@ -39,6 +39,16 @@ function regExpEqual(re1, re2) {
 
 describe('performQuery', () => {
 
+    it('should support basic arithmetic', () => {
+        const queryString = (
+            'SELECT 1 + (2 * 4), 20 / 2, 8 % 3, 23 - 3.5 FROM "test/single-item.csv"'
+        );
+        return queryResultsEqual(queryString, [
+            '1 + (2 * 4),20 / 2,8 % 3,23 - 3.5',
+            '9,10,2,19.5',
+        ]);
+    });
+
     it('should support LIMIT', () => {
         const queryString = 'SELECT * FROM "test/test.csv" LIMIT 2';
         return queryResultsEqual(queryString, [

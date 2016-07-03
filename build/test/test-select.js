@@ -43,6 +43,11 @@ function regExpEqual(re1, re2) {
 
 describe('performQuery', function () {
 
+    it('should support basic arithmetic', function () {
+        var queryString = 'SELECT 1 + (2 * 4), 20 / 2, 8 % 3, 23 - 3.5 FROM "test/single-item.csv"';
+        return queryResultsEqual(queryString, ['1 + (2 * 4),20 / 2,8 % 3,23 - 3.5', '9,10,2,19.5']);
+    });
+
     it('should support LIMIT', function () {
         var queryString = 'SELECT * FROM "test/test.csv" LIMIT 2';
         return queryResultsEqual(queryString, ['name,age,gender', 'David Timms,23,M', 'Bob Jones,29,M']);

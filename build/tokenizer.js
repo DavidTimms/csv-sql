@@ -18,9 +18,8 @@ var tokenTypes = {
     identifier: /^[a-z_]\w*/i,
     parOpen: /^\(/,
     parClose: /^\)/,
-    star: /^\*/,
     number: /^\d+(\.\d+)?/,
-    operator: /^(=|<=|>=|!=|<>|<|>)/,
+    operator: /^(=|<=|>=|!=|<>|<|>|\+|\-|\/|\*|\^|\%)/,
     string: /^("|'|`)/,
     comma: /^,/,
     semicolon: /^;/

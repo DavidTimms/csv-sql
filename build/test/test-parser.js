@@ -61,12 +61,6 @@ describe('tokenize', function () {
         _chai.assert.deepEqual(tokens, [ast.parOpen(), ast.parClose(), ast.parOpen(), ast.parOpen(), ast.parOpen(), ast.parClose(), ast.parClose()]);
     });
 
-    it('should detect stars', function () {
-        var tokens = (0, _tokenizer.tokenize)('* (*) **');
-
-        _chai.assert.deepEqual(tokens, [ast.star(), ast.parOpen(), ast.star(), ast.parClose(), ast.star(), ast.star()]);
-    });
-
     it('should detect commas', function () {
         var tokens = (0, _tokenizer.tokenize)(', so, many,,, commas,');
 
@@ -118,7 +112,10 @@ describe('parseQuery', function () {
         _chai.assert.deepEqual((0, _parser.parseQuery)(sql).select, [ast.namedExpression(ast.binaryExpression('AND', ast.binaryExpression('OR', ast.identifier('a'), ast.identifier('b')), ast.identifier('c')))]);
     });
 
-    it('should support correct operator precedence');
+    it('should support correct operator precedence');(function () {
+        var sql = 'SELECT 1 * 2 + 3 > 4 OR a = b = TRUE FROM "a.csv"';
+        _chai.assert.deepEqual((0, _parser.parseQuery)(sql).select, [ast.namedExpression(ast.binaryExpression('OR', ast.binaryExpression('>', ast.binaryExpression('*', ast.number(1), ast.binaryExpression('+', ast.number(2), ast.number(3))), ast.number(4)), ast.binaryExpression('=', ast.identifier('a'), ast.binaryExpression('=', ast.identifier('b'), ast.literal(true)))))]);
+    });
 
     it('should accept a LIMIT clause', function () {
         var sql = 'SELECT a FROM "b.csv" LIMIT 2';

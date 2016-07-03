@@ -96,19 +96,6 @@ describe('tokenize', () => {
         ]);
     });
 
-    it('should detect stars', () => {
-        const tokens = tokenize('* (*) **');
-
-        assert.deepEqual(tokens, [
-            ast.star(),
-            ast.parOpen(),
-            ast.star(),
-            ast.parClose(),
-            ast.star(),
-            ast.star(),
-        ]);
-    });
-
     it('should detect commas', () => {
         const tokens = tokenize(', so, many,,, commas,');
 
@@ -224,7 +211,38 @@ describe('parseQuery', () => {
         ]);
     });
 
-    it('should support correct operator precedence');
+    it('should support correct operator precedence'); (() => {
+        const sql = 'SELECT 1 * 2 + 3 > 4 OR a = b = TRUE FROM "a.csv"';
+        assert.deepEqual(parseQuery(sql).select, [
+            ast.namedExpression(
+                ast.binaryExpression(
+                    'OR',
+                    ast.binaryExpression(
+                        '>',
+                        ast.binaryExpression(
+                            '*',
+                            ast.number(1),
+                            ast.binaryExpression(
+                                '+',
+                                ast.number(2),
+                                ast.number(3)
+                            )
+                        ),
+                        ast.number(4)
+                    ),
+                    ast.binaryExpression(
+                        '=',
+                        ast.identifier('a'),
+                        ast.binaryExpression(
+                            '=',
+                            ast.identifier('b'),
+                            ast.literal(true)
+                        )
+                    )
+                )
+            )
+        ]);
+    });
 
     it('should accept a LIMIT clause', () => {
         const sql = ('SELECT a FROM "b.csv" LIMIT 2');

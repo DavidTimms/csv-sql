@@ -57,6 +57,18 @@ function performBinaryOperation(operator, left, right) {
             return Boolean(left) && Boolean(right);
         case 'LIKE':
             return str(left).search(patternToRegExp(right)) !== -1;
+        case '+':
+            return Number(left) + Number(right);
+        case '-':
+            return left - right;
+        case '*':
+            return left * right;
+        case '/':
+            return left / right;
+        case '%':
+            return left % right;
+        case '^':
+            return Math.pow(left, right);
         default:
             throw Error(`Unknown operator: ${operator}`);   
     }

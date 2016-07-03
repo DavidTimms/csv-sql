@@ -65,6 +65,7 @@ function createEndableReadStream(filePath) {
     // performLimit will call this function once it has been satisifed,
     // to avoid processing the rest of the file
     readStream.end = () => {
+        return;
         if (isStreamActive) {
             fs.closeSync(fileDescriptor);
             readStream.destroy();

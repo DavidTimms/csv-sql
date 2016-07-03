@@ -19,6 +19,8 @@
     "csv": "^0.4.6"
   },
   "devDependencies": {
+    "babel-cli": "^6.10.1",
+    "babel-preset-es2015": "^6.9.0",
     "chai": "^3.4.1",
     "mocha": "^2.3.4"
   }

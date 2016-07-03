@@ -1,18 +1,11 @@
 'use strict';
 
-Object.defineProperty(exports, '__esModule', {
+Object.defineProperty(exports, "__esModule", {
     value: true
 });
+exports.OrderingStream = undefined;
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-var _get = function get(_x, _x2, _x3) { var _again = true; _function: while (_again) { var object = _x, property = _x2, receiver = _x3; desc = parent = getter = undefined; _again = false; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x = parent; _x2 = property; _x3 = receiver; _again = true; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _evaluateExpression = require('./evaluate-expression');
 
@@ -20,29 +13,39 @@ var _stream = require('stream');
 
 var _stream2 = _interopRequireDefault(_stream);
 
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
 var LESS = -1;
 var SAME = 0;
 var GREATER = 1;
 
-var OrderingStream = (function (_stream$Transform) {
+var OrderingStream = exports.OrderingStream = function (_stream$Transform) {
+    _inherits(OrderingStream, _stream$Transform);
+
     function OrderingStream(_ref) {
         var orderBy = _ref.orderBy;
         var limit = _ref.limit;
 
         _classCallCheck(this, OrderingStream);
 
-        _get(Object.getPrototypeOf(OrderingStream.prototype), 'constructor', this).call(this, { objectMode: true });
+        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(OrderingStream).call(this, { objectMode: true }));
 
-        this.terms = orderBy;
+        _this.terms = orderBy;
         // TODO use limit to optimise sorting
-        this.limit = limit;
-        this.rows = [];
+        _this.limit = limit;
+        _this.rows = [];
 
-        var directionModifiers = this.terms.map(function (term) {
+        var directionModifiers = _this.terms.map(function (term) {
             return term.direction === 'asc' ? 1 : -1;
         });
 
-        this.compareRows = function (row1, row2) {
+        _this.compareRows = function (row1, row2) {
             for (var i = 0; i < row1._orderingValues.length; i++) {
                 var comparisionResult = compare(row1._orderingValues[i], row2._orderingValues[i]);
 
@@ -52,9 +55,8 @@ var OrderingStream = (function (_stream$Transform) {
             }
             return SAME;
         };
+        return _this;
     }
-
-    _inherits(OrderingStream, _stream$Transform);
 
     _createClass(OrderingStream, [{
         key: '_transform',
@@ -79,9 +81,7 @@ var OrderingStream = (function (_stream$Transform) {
     }]);
 
     return OrderingStream;
-})(_stream2['default'].Transform);
-
-exports.OrderingStream = OrderingStream;
+}(_stream2.default.Transform);
 
 function compare(a, b) {
     if ((0, _evaluateExpression.isNull)(a)) {

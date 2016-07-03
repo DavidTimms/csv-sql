@@ -26,18 +26,7 @@ export function performQuery(queryString, options) {
         throw Error(`file not found: "${filePath}"`);
     }
 
-    const tableFileDescriptor = fs.openSync(filePath, 'r');
-    const tableReadStream = fs.createReadStream(
-        null,
-        {fd: tableFileDescriptor}
-    );
-
-    // performLimit will call this function once it has been satisifed,
-    // to avoid processing the rest of the file
-    function stopReading() {
-        fs.closeSync(tableFileDescriptor);
-        tableReadStream.destroy();
-    }
+    const tableReadStream = createEndableReadStream(filePath);
 
     let resultStream = tableReadStream
         .pipe(csv.parse({
@@ -58,10 +47,31 @@ export function performQuery(queryString, options) {
 
     resultStream = resultStream
         .pipe(csv.transform(performOffset(query)))
-        .pipe(csv.transform(performLimit(query, stopReading)))
+        .pipe(csv.transform(performLimit(query, {onLimitReached: tableReadStream.end})))
         .pipe(csv.transform(performSelect(query)));
 
     return resultStream;
+}
+
+function createEndableReadStream(filePath) {
+    const fileDescriptor = fs.openSync(filePath, 'r');
+    const readStream = fs.createReadStream(null, {fd: fileDescriptor});
+    let isStreamActive = true;
+
+    readStream.on('end', () => {
+        isStreamActive = false;
+    });
+
+    // performLimit will call this function once it has been satisifed,
+    // to avoid processing the rest of the file
+    readStream.end = () => {
+        if (isStreamActive) {
+            fs.closeSync(fileDescriptor);
+            readStream.destroy();
+        }
+    }
+
+    return readStream;
 }
 
 export function toCSV(rowStream, options) {

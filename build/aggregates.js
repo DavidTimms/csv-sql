@@ -1,14 +1,11 @@
 'use strict';
 
-Object.defineProperty(exports, '__esModule', {
+Object.defineProperty(exports, "__esModule", {
     value: true
 });
+exports.aggregateFunctions = undefined;
 exports.identifyAggregatesInQuery = identifyAggregatesInQuery;
 exports.identifyAggregatesInExpression = identifyAggregatesInExpression;
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
-
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
 
 var _utils = require('./utils');
 
@@ -17,6 +14,10 @@ var _ast = require('./ast');
 var ast = _interopRequireWildcard(_ast);
 
 var _evaluateExpression = require('./evaluate-expression');
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 function identifyAggregatesInQuery(query) {
     // Converts any calls to aggregate functions in the output columns,
@@ -27,28 +28,29 @@ function identifyAggregatesInQuery(query) {
 
     // TODO validate that aggregates are not used in WHERE or GROUP BY clauses
 
-    var select = undefined,
-        selectAggs = undefined;
+    var select = void 0,
+        selectAggs = void 0;
 
     if (query.select === '*') {
         select = query.select;
         selectAggs = [];
     } else {
-        var _identifyAggregatesInExpression = identifyAggregatesInExpression(query.select);
+        var _identifyAggregatesIn = identifyAggregatesInExpression(query.select);
 
-        select = _identifyAggregatesInExpression.expression;
-        selectAggs = _identifyAggregatesInExpression.aggregates;
+        select = _identifyAggregatesIn.expression;
+        selectAggs = _identifyAggregatesIn.aggregates;
     }
 
-    var _identifyAggregatesInExpression2 = identifyAggregatesInExpression(query.having);
+    var _identifyAggregatesIn2 = identifyAggregatesInExpression(query.having);
 
-    var having = _identifyAggregatesInExpression2.expression;
-    var havingAggs = _identifyAggregatesInExpression2.aggregates;
+    var having = _identifyAggregatesIn2.expression;
+    var havingAggs = _identifyAggregatesIn2.aggregates;
 
-    var _identifyAggregatesInExpression3 = identifyAggregatesInExpression(query.orderBy);
+    var _identifyAggregatesIn3 = identifyAggregatesInExpression(query.orderBy);
 
-    var orderBy = _identifyAggregatesInExpression3.expression;
-    var orderByAggs = _identifyAggregatesInExpression3.aggregates;
+    var orderBy = _identifyAggregatesIn3.expression;
+    var orderByAggs = _identifyAggregatesIn3.aggregates;
+
 
     var combinedAggs = selectAggs.concat(havingAggs, orderByAggs);
     var aggregates = deduplicateAggregates(combinedAggs);
@@ -57,7 +59,7 @@ function identifyAggregatesInQuery(query) {
 }
 
 function identifyAggregatesInExpression(exp) {
-    var expWithAggregates = undefined;
+    var expWithAggregates = void 0;
 
     switch (exp && exp.type) {
         case 'call':
@@ -71,13 +73,15 @@ function identifyAggregatesInExpression(exp) {
                 var aggregateExp = ast.aggregate(exp.functionName, exp.arguments);
                 expWithAggregates = {
                     aggregates: [aggregateExp],
-                    expression: aggregateExp };
+                    expression: aggregateExp
+                };
             } else {
                 // recursively search for aggregates in the function
                 // call's arguments
                 var initial = {
                     aggregates: [],
-                    expression: (0, _utils.merge)(exp, { arguments: [] }) };
+                    expression: (0, _utils.merge)(exp, { arguments: [] })
+                };
                 expWithAggregates = exp.arguments.map(identifyAggregatesInExpression).reduce(function (current, _ref) {
                     var _current$aggregates;
 
@@ -99,17 +103,22 @@ function identifyAggregatesInExpression(exp) {
                 aggregates: left.aggregates.concat(right.aggregates),
                 expression: (0, _utils.merge)(exp, {
                     left: left.expression,
-                    right: right.expression }) };
+                    right: right.expression
+                })
+            };
             break;
         case 'namedExpression':
         case 'orderingTerm':
-            var _identifyAggregatesInExpression4 = identifyAggregatesInExpression(exp.expression),
-                expression = _identifyAggregatesInExpression4.expression,
-                aggregates = _identifyAggregatesInExpression4.aggregates;
+            var _identifyAggregatesIn4 = identifyAggregatesInExpression(exp.expression);
+
+            var expression = _identifyAggregatesIn4.expression;
+            var aggregates = _identifyAggregatesIn4.aggregates;
+
 
             expWithAggregates = {
                 aggregates: aggregates,
-                expression: (0, _utils.merge)(exp, { expression: expression }) };
+                expression: (0, _utils.merge)(exp, { expression: expression })
+            };
             break;
         default:
             if (exp instanceof Array) {
@@ -122,13 +131,15 @@ function identifyAggregatesInExpression(exp) {
                     aggregates: itemResults.reduce(concatAggs, []),
                     expression: itemResults.map(function (result) {
                         return result.expression;
-                    }) };
+                    })
+                };
             } else {
                 // return the expression unchanged, a it is a basic type
                 // that cannot contain aggregates
                 expWithAggregates = {
                     aggregates: [],
-                    expression: exp };
+                    expression: exp
+                };
             }
     }
 
@@ -146,12 +157,13 @@ function expressionContainsAggregate(exp) {
     return identifyAggregatesInExpression(exp).aggregates.length > 0;
 }
 
-var aggregateFunctions = {
+var aggregateFunctions = exports.aggregateFunctions = {
     COUNT: {
         initial: 0,
         reducer: function reducer(subTotal, value) {
             return subTotal + ((0, _evaluateExpression.isNull)(value) ? 0 : 1);
-        } },
+        }
+    },
     MIN: {
         initial: null,
         reducer: function reducer(currentMin, value) {
@@ -197,5 +209,5 @@ var aggregateFunctions = {
             }
             return (s || '') + String(value);
         }
-    } };
-exports.aggregateFunctions = aggregateFunctions;
+    }
+};

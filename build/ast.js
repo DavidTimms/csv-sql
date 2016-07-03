@@ -1,8 +1,9 @@
 'use strict';
 
-Object.defineProperty(exports, '__esModule', {
+Object.defineProperty(exports, "__esModule", {
     value: true
 });
+exports.semicolon = exports.comma = exports.star = exports.parClose = exports.parOpen = exports.operator = exports.keyword = undefined;
 exports.literal = literal;
 exports.string = string;
 exports.identifier = identifier;
@@ -23,45 +24,40 @@ function literal(value) {
     return {
         type: 'literal',
         value: value,
-        string: String(value).toUpperCase() };
+        string: String(value).toUpperCase()
+    };
 }
 
 function string(s) {
     return {
         type: 'string',
         value: s,
-        string: quoteString(s, '"') };
+        string: quoteString(s, '"')
+    };
 }
 
 function tokenMaker(type) {
-    var defaultString = arguments[1] === undefined ? null : arguments[1];
+    var defaultString = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
 
     return function () {
-        var s = arguments[0] === undefined ? defaultString : arguments[0];
+        var s = arguments.length <= 0 || arguments[0] === undefined ? defaultString : arguments[0];
 
         var upper = s.toUpperCase();
         return {
             type: type,
             string: upper,
-            value: upper };
+            value: upper
+        };
     };
 }
 
-var keyword = tokenMaker('keyword');
-exports.keyword = keyword;
-var operator = tokenMaker('operator');
-exports.operator = operator;
-var parOpen = tokenMaker('parOpen', '(');
-exports.parOpen = parOpen;
-var parClose = tokenMaker('parClose', ')');
-exports.parClose = parClose;
-var star = tokenMaker('star', '*');
-exports.star = star;
-var comma = tokenMaker('comma', ',');
-exports.comma = comma;
-var semicolon = tokenMaker('semicolon', ';');
-
-exports.semicolon = semicolon;
+var keyword = exports.keyword = tokenMaker('keyword');
+var operator = exports.operator = tokenMaker('operator');
+var parOpen = exports.parOpen = tokenMaker('parOpen', '(');
+var parClose = exports.parClose = tokenMaker('parClose', ')');
+var star = exports.star = tokenMaker('star', '*');
+var comma = exports.comma = tokenMaker('comma', ',');
+var semicolon = exports.semicolon = tokenMaker('semicolon', ';');
 
 function identifier(value) {
     var string = value;
@@ -74,35 +70,34 @@ function identifier(value) {
     return {
         type: 'identifier',
         string: string,
-        value: value };
+        value: value
+    };
 }
 
 function number(num) {
     return {
         type: 'number',
         string: String(num),
-        value: Number(num) };
+        value: Number(num)
+    };
 }
 
 function call(functionName) {
-    var args = arguments[1] === undefined ? [] : arguments[1];
+    var args = arguments.length <= 1 || arguments[1] === undefined ? [] : arguments[1];
 
     functionName = functionName.toUpperCase();
     return {
         type: 'call',
         functionName: functionName,
         arguments: args,
-        string: '' + functionName + '(' + args.map(function (arg) {
+        string: functionName + '(' + args.map(function (arg) {
             return arg.string;
-        }).join(', ') + ')' };
+        }).join(', ') + ')'
+    };
 }
 
 function aggregate() {
-    for (var _len = arguments.length, callArgs = Array(_len), _key = 0; _key < _len; _key++) {
-        callArgs[_key] = arguments[_key];
-    }
-
-    var callNode = call.apply(undefined, callArgs);
+    var callNode = call.apply(undefined, arguments);
     return (0, _utils.merge)(callNode, { type: 'aggregate', id: (0, _utils.md5)(callNode.string) });
 }
 
@@ -112,29 +107,32 @@ function binaryExpression(operator, left, right) {
         operator: operator,
         left: left,
         right: right,
-        string: '' + parenWrap(left) + ' ' + operator + ' ' + parenWrap(right) };
+        string: parenWrap(left) + ' ' + operator + ' ' + parenWrap(right)
+    };
 }
 
 function caseIf(cases) {
-    var elseExpression = arguments[1] === undefined ? null : arguments[1];
+    var elseExpression = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
 
     var node = {
         type: 'caseIf',
         cases: cases,
-        elseExpression: elseExpression };
+        elseExpression: elseExpression
+    };
 
     node.string = caseString(node);
     return node;
 }
 
 function caseSwitch(switchExpression, cases) {
-    var elseExpression = arguments[2] === undefined ? null : arguments[2];
+    var elseExpression = arguments.length <= 2 || arguments[2] === undefined ? null : arguments[2];
 
     var node = {
         type: 'caseSwitch',
         switchExpression: switchExpression,
         cases: cases,
-        elseExpression: elseExpression };
+        elseExpression: elseExpression
+    };
 
     node.string = caseString(node);
     return node;
@@ -150,7 +148,7 @@ function caseString(_ref) {
 
     return 'CASE' + switchString + ' ' + cases.map(function (c) {
         return c.string;
-    }).join(' ') + '' + elseString + ' END';
+    }).join(' ') + elseString + ' END';
 }
 
 function whenThen(when, then) {
@@ -158,11 +156,12 @@ function whenThen(when, then) {
         type: 'whenThen',
         when: when,
         then: then,
-        string: 'WHEN ' + when.string + ' THEN ' + then.string };
+        string: 'WHEN ' + when.string + ' THEN ' + then.string
+    };
 }
 
 function namedExpression(expression) {
-    var name = arguments[1] === undefined ? null : arguments[1];
+    var name = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
 
     if (!name) {
         name = expression.type === 'identifier' ? expression.value : expression.string;
@@ -170,16 +169,18 @@ function namedExpression(expression) {
     return {
         type: 'namedExpression',
         expression: expression,
-        name: name };
+        name: name
+    };
 }
 
 function orderingTerm(expression) {
-    var direction = arguments[1] === undefined ? 'asc' : arguments[1];
+    var direction = arguments.length <= 1 || arguments[1] === undefined ? 'asc' : arguments[1];
 
     return {
         type: 'orderingTerm',
         expression: expression,
-        direction: direction.toLowerCase() };
+        direction: direction.toLowerCase()
+    };
 }
 
 function query(_ref2) {
@@ -200,6 +201,7 @@ function query(_ref2) {
     var _ref2$aggregates = _ref2.aggregates;
     var aggregates = _ref2$aggregates === undefined ? null : _ref2$aggregates;
 
+
     return {
         select: select,
         from: from,
@@ -209,7 +211,8 @@ function query(_ref2) {
         orderBy: orderBy,
         limit: limit,
         offset: offset,
-        aggregates: aggregates };
+        aggregates: aggregates
+    };
 }
 
 function parenWrap(exp) {

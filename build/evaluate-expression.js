@@ -1,6 +1,6 @@
 'use strict';
 
-Object.defineProperty(exports, '__esModule', {
+Object.defineProperty(exports, "__esModule", {
     value: true
 });
 exports.evaluateExpression = evaluateExpression;
@@ -8,9 +8,9 @@ exports.patternToRegExp = patternToRegExp;
 exports.isNull = isNull;
 exports.str = str;
 
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
-
 require('./aggregates');
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 function evaluateExpression(exp, context) {
     switch (exp.type) {
@@ -166,15 +166,17 @@ var functions = {
             var startIndex = 0;
             var endIndex = s.length - 1;
 
-            while (chars.indexOf(s[startIndex]) >= 0) startIndex++;
-            if (startIndex === s.length) return '';
-            while (chars.indexOf(s[endIndex]) >= 0) endIndex--;
-            return s.substring(startIndex, endIndex + 1);
+            while (chars.indexOf(s[startIndex]) >= 0) {
+                startIndex++;
+            }if (startIndex === s.length) return '';
+            while (chars.indexOf(s[endIndex]) >= 0) {
+                endIndex--;
+            }return s.substring(startIndex, endIndex + 1);
         }
     },
     LTRIM: function LTRIM(s) {
-        var chars = arguments[1] === undefined ? ' \t\n\r' : arguments[1];
-        var min = arguments[2] === undefined ? 0 : arguments[2];
+        var chars = arguments.length <= 1 || arguments[1] === undefined ? ' \t\n\r' : arguments[1];
+        var min = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
 
         if (isNull(s)) return null;
 
@@ -185,6 +187,7 @@ var functions = {
             startIndex++;
         }
         return s.substring(startIndex);
-    } };
+    }
+};
 
 functions.IFNULL = functions.COALESCE;

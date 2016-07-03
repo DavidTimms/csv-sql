@@ -1,5 +1,5 @@
 
-export function performLimit({limit}, stopReading) {
+export function performLimit({limit}, {onLimitReached}) {
     if (limit === null || limit === undefined) {
         return row => row;
     }
@@ -9,7 +9,7 @@ export function performLimit({limit}, stopReading) {
     return row => {
         if (rowCount >= limit) {
             if (!stopped) {
-                stopReading();
+                onLimitReached();
                 stopped = true;
             }
             return null;

@@ -1,7 +1,5 @@
 'use strict';
 
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
-
 var _chai = require('chai');
 
 var _ast = require('../ast');
@@ -11,6 +9,8 @@ var ast = _interopRequireWildcard(_ast);
 var _tokenizer = require('../tokenizer');
 
 var _parser = require('../parser');
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 describe('tokenize', function () {
     it('should detect keywords', function () {
@@ -84,13 +84,15 @@ describe('parseQuery', function () {
     it('should parse basic starred queries', function () {
         _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT * FROM "example.csv"'), ast.query({
             select: '*',
-            from: 'example.csv' }));
+            from: 'example.csv'
+        }));
     });
 
     it('should parse queries with an output column list', function () {
         _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT name, age, gender FROM "people.csv"'), ast.query({
             select: [ast.namedExpression(ast.identifier('name')), ast.namedExpression(ast.identifier('age')), ast.namedExpression(ast.identifier('gender'))],
-            from: 'people.csv' }));
+            from: 'people.csv'
+        }));
     });
 
     it('should parse queries with renamed columns', function () {

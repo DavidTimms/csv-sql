@@ -4,7 +4,6 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 exports.performOffset = performOffset;
-
 function performOffset(_ref) {
     var offset = _ref.offset;
 

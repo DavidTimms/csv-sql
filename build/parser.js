@@ -1,15 +1,12 @@
 'use strict';
 
-Object.defineProperty(exports, '__esModule', {
+Object.defineProperty(exports, "__esModule", {
     value: true
 });
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
 exports.parseQuery = parseQuery;
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
-
-function _toArray(arr) { return Array.isArray(arr) ? arr : Array.from(arr); }
-
-function _defineProperty(obj, key, value) { return Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); }
 
 var _utils = require('./utils');
 
@@ -19,13 +16,20 @@ var _ast = require('./ast');
 
 var ast = _interopRequireWildcard(_ast);
 
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _toArray(arr) { return Array.isArray(arr) ? arr : Array.from(arr); }
+
 function parseQuery(query) {
-    var _parseSubQuery$ifNextToken = parseSubQuery(query).ifNextToken(isType('semicolon'), function (curr) {
+    var _parseSubQuery$ifNext = parseSubQuery(query).ifNextToken(isType('semicolon'), function (curr) {
         return curr.then(semicolon);
     });
 
-    var node = _parseSubQuery$ifNextToken.node;
-    var rest = _parseSubQuery$ifNextToken.rest;
+    var node = _parseSubQuery$ifNext.node;
+    var rest = _parseSubQuery$ifNext.rest;
+
 
     if (rest.length > 0) {
         var restString = rest.map(function (token) {
@@ -93,12 +97,12 @@ function offsetClause(tokens) {
     });
 }
 
-function atom(_ref2) {
-    var _ref22 = _toArray(_ref2);
+function atom(_ref) {
+    var _ref2 = _toArray(_ref);
 
-    var first = _ref22[0];
+    var first = _ref2[0];
 
-    var rest = _ref22.slice(1);
+    var rest = _ref2.slice(1);
 
     // grouped expression
     if (isType('parOpen', first)) {
@@ -106,39 +110,39 @@ function atom(_ref2) {
     }
     // literal TRUE, FALSE, or NULL
     else if (isType('keyword', first)) {
-        var s = first.string;
-        if (s === 'TRUE' || s === 'FALSE' || s === 'NULL') {
-            return parser(rest, ast.literal(JSON.parse(s.toLowerCase())));
-        } else if (first.string === 'CASE') {
-            return caseExpression(rest);
-        }
-    }
-    // function call
-    else if (isType('identifier', first) && isType('parOpen', rest[0])) {
-        var _ret = (function () {
-            var functionName = first.value;
-
-            if (functionName.toUpperCase() === 'COUNT' && isType('star', rest[1])) {
-                return {
-                    v: parser(rest.slice(2)).then(parClose).mapNode(function (node) {
-                        return ast.call(functionName, [ast.star()]);
-                    })
-                };
+            var s = first.string;
+            if (s === 'TRUE' || s === 'FALSE' || s === 'NULL') {
+                return parser(rest, ast.literal(JSON.parse(s.toLowerCase())));
+            } else if (first.string === 'CASE') {
+                return caseExpression(rest);
             }
+        }
+        // function call
+        else if (isType('identifier', first) && isType('parOpen', rest[0])) {
+                var _ret = function () {
+                    var functionName = first.value;
 
-            return {
-                v: parser(rest.slice(1)).bind('arguments', many(expression, { separator: comma, min: 0 })).then(parClose).mapNode(function (node) {
-                    return ast.call(functionName, node.arguments);
-                })
-            };
-        })();
+                    if (functionName.toUpperCase() === 'COUNT' && isType('star', rest[1])) {
+                        return {
+                            v: parser(rest.slice(2)).then(parClose).mapNode(function (node) {
+                                return ast.call(functionName, [ast.star()]);
+                            })
+                        };
+                    }
 
-        if (typeof _ret === 'object') return _ret.v;
-    }
-    // identifier, number, or string
-    else if (isType(['identifier', 'number', 'string'], first)) {
-        return parser(rest, first);
-    }
+                    return {
+                        v: parser(rest.slice(1)).bind('arguments', many(expression, { separator: comma, min: 0 })).then(parClose).mapNode(function (node) {
+                            return ast.call(functionName, node.arguments);
+                        })
+                    };
+                }();
+
+                if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+            }
+            // identifier, number, or string
+            else if (isType(['identifier', 'number', 'string'], first)) {
+                    return parser(rest, first);
+                }
 
     throw SyntaxError('Expected an expression, found "' + (first.string || '(end of input)') + '"');
 }
@@ -213,24 +217,23 @@ var parOpen = parseTokenType('parOpen', { expected: 'an opening parenthesis' });
 var parClose = parseTokenType('parClose', { expected: 'a closing parenthesis' });
 
 function parseTokenType(typeName) {
-    var _ref5 = arguments[1] === undefined ? { expected: 'a ' + typeName } : arguments[1];
+    var _ref5 = arguments.length <= 1 || arguments[1] === undefined ? { expected: 'a ' + typeName } : arguments[1];
 
     var expected = _ref5.expected;
-    return (function () {
-        return function (_ref6) {
-            var _ref62 = _toArray(_ref6);
 
-            var first = _ref62[0];
+    return function (_ref6) {
+        var _ref7 = _toArray(_ref6);
 
-            var rest = _ref62.slice(1);
+        var first = _ref7[0];
 
-            if (isType(typeName, first)) {
-                return parser(rest, first.value);
-            }
-            var found = first && first.string || '(end of input)';
-            throw SyntaxError('Expected ' + expected + ', found "' + found + '"');
-        };
-    })();
+        var rest = _ref7.slice(1);
+
+        if (isType(typeName, first)) {
+            return parser(rest, first.value);
+        }
+        var found = first && first.string || '(end of input)';
+        throw SyntaxError('Expected ' + expected + ', found "' + found + '"');
+    };
 }
 
 function isKeyword(keyword, token) {
@@ -255,14 +258,14 @@ function isType(types, token) {
 }
 
 function many(parseFunc) {
-    var _ref7 = arguments[1] === undefined ? {} : arguments[1];
+    var _ref8 = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
-    var separator = _ref7.separator;
-    var min = _ref7.min;
+    var separator = _ref8.separator;
+    var min = _ref8.min;
 
     if (min === undefined) min = 1;
     return function (tokens) {
-        var node = undefined,
+        var node = void 0,
             rest = tokens;
         var parts = [];
         try {
@@ -294,11 +297,7 @@ function many(parseFunc) {
 
 function not(predicate) {
     return function () {
-        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-            args[_key] = arguments[_key];
-        }
-
-        return !predicate.apply(undefined, args);
+        return !predicate.apply(undefined, arguments);
     };
 }
 
@@ -314,7 +313,7 @@ function printRest(parser) {
 }
 
 function parser(rest) {
-    var node = arguments[1] === undefined ? null : arguments[1];
+    var node = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
 
     return {
         rest: rest,
@@ -351,5 +350,6 @@ function parser(rest) {
         },
         map: function map(func) {
             return func(this);
-        } };
+        }
+    };
 }

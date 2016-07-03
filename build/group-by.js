@@ -1,18 +1,11 @@
 'use strict';
 
-Object.defineProperty(exports, '__esModule', {
+Object.defineProperty(exports, "__esModule", {
     value: true
 });
+exports.GroupingStream = undefined;
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-var _get = function get(_x, _x2, _x3) { var _again = true; _function: while (_again) { var object = _x, property = _x2, receiver = _x3; desc = parent = getter = undefined; _again = false; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x = parent; _x2 = property; _x3 = receiver; _again = true; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _evaluateExpression = require('./evaluate-expression');
 
@@ -22,42 +15,49 @@ var _stream = require('stream');
 
 var _stream2 = _interopRequireDefault(_stream);
 
-var EmptyObject = (function (_ref) {
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var EmptyObject = function (_ref) {
+    _inherits(EmptyObject, _ref);
+
     function EmptyObject() {
         _classCallCheck(this, EmptyObject);
 
-        if (_ref != null) {
-            _ref.apply(this, arguments);
-        }
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(EmptyObject).apply(this, arguments));
     }
 
-    _inherits(EmptyObject, _ref);
-
     return EmptyObject;
-})(null);
+}(null);
 
 EmptyObject.prototype._hasOwnProperty = Object.prototype.hasOwnProperty;
 
-var GroupingStream = (function (_stream$Transform) {
+var GroupingStream = exports.GroupingStream = function (_stream$Transform) {
+    _inherits(GroupingStream, _stream$Transform);
+
     function GroupingStream(_ref2) {
         var groupBy = _ref2.groupBy;
         var aggregates = _ref2.aggregates;
 
         _classCallCheck(this, GroupingStream);
 
-        _get(Object.getPrototypeOf(GroupingStream.prototype), 'constructor', this).call(this, { objectMode: true });
+        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(GroupingStream).call(this, { objectMode: true }));
 
-        this.aggregates = aggregates;
-        this.expressions = groupBy || [];
+        _this2.aggregates = aggregates;
+        _this2.expressions = groupBy || [];
 
-        if (this.expressions.length > 0) {
-            this.grouping = new EmptyObject();
+        if (_this2.expressions.length > 0) {
+            _this2.grouping = new EmptyObject();
         } else {
-            this.grouping = null;
+            _this2.grouping = null;
         }
+        return _this2;
     }
-
-    _inherits(GroupingStream, _stream$Transform);
 
     _createClass(GroupingStream, [{
         key: '_transform',
@@ -70,7 +70,7 @@ var GroupingStream = (function (_stream$Transform) {
                 if (grouping._hasOwnProperty(value)) {
                     grouping = grouping[value];
                 } else {
-                    var child = undefined;
+                    var child = void 0;
                     if (i === expressionCount - 1) {
                         child = row;
                         this.createGroupAggregations(row);
@@ -134,6 +134,4 @@ var GroupingStream = (function (_stream$Transform) {
     }]);
 
     return GroupingStream;
-})(_stream2['default'].Transform);
-
-exports.GroupingStream = GroupingStream;
+}(_stream2.default.Transform);

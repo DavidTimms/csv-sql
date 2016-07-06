@@ -57,7 +57,8 @@ function performQuery(queryString, options) {
 
     var resultStream = tableReadStream.pipe(_csv2.default.parse({
         columns: true,
-        delimiter: options.inSeparator
+        delimiter: options.inSeparator,
+        relax_column_count: true
     })).pipe(_csv2.default.transform((0, _where.performFilter)(query.where)));
 
     if (query.aggregates.length > 0 || query.groupBy) {
@@ -97,7 +98,7 @@ function createEndableReadStream(filePath) {
 
 function toCSV(rowStream, options) {
     return rowStream.pipe((0, _utils.preStringify)()).pipe(_csv2.default.stringify({
-        header: true,
+        header: options.header,
         delimiter: options.outSeparator
     }));
 }
@@ -112,12 +113,11 @@ function startRepl(options) {
                 process.exit();
             }
 
+            // skip empty lines
             if (queryString.match(/^\s*$/)) {
                 callback(null, undefined);
                 return;
             }
-
-            console.log(JSON.stringify(queryString));
 
             var resultStream = performQuery(queryString, options);
 
@@ -135,7 +135,7 @@ function startRepl(options) {
 
 function cli() {
 
-    _commander2.default.version(_package2.default.version).description(_package2.default.description).arguments('<query>').option('-s, --separator [string]', 'The CSV column separator for input and output').option('--in-separator [string]', 'The CSV column separator for reading input').option('--out-separator [string]', 'The CSV column separator for generating output').parse(process.argv);
+    _commander2.default.version(_package2.default.version).description(_package2.default.description).arguments('<query>').option('-s, --separator [string]', 'The CSV column separator for input and output').option('--in-separator [string]', 'The CSV column separator for reading input').option('--out-separator [string]', 'The CSV column separator for generating output').option('--no-header', 'Do not include a header row in the output').parse(process.argv);
 
     var options = _commander2.default;
     var query = options.args[0];

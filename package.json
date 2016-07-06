@@ -1,6 +1,6 @@
 {
   "name": "csv-sql",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "A command line tool for running SQL queries on CSV files.",
   "main": "csv-sql.js",
   "bin": {

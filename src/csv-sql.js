@@ -32,6 +32,7 @@ export function performQuery(queryString, options) {
         .pipe(csv.parse({
             columns: true,
             delimiter: options.inSeparator,
+            relax_column_count: true,
         }))
         .pipe(csv.transform(performFilter(query.where)));
 
@@ -77,7 +78,7 @@ function createEndableReadStream(filePath) {
 
 export function toCSV(rowStream, options) {
     return rowStream.pipe(preStringify()).pipe(csv.stringify({
-        header: true,
+        header: options.header,
         delimiter: options.outSeparator,
     }));
 }
@@ -92,12 +93,11 @@ function startRepl(options) {
                 process.exit();
             }
 
+            // skip empty lines
             if (queryString.match(/^\s*$/)) {
                 callback(null, undefined);
                 return;
             }
-
-            console.log(JSON.stringify(queryString));
 
             const resultStream = performQuery(queryString, options);
 
@@ -132,6 +132,10 @@ export function cli() {
         .option(
             '--out-separator [string]', 
             'The CSV column separator for generating output'
+        )
+        .option(
+            '--no-header', 
+            'Do not include a header row in the output'
         )
         .parse(process.argv);
 

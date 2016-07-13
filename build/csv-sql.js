@@ -47,13 +47,17 @@ function performQuery(queryString, options) {
     var query = (0, _aggregates.identifyAggregatesInQuery)((0, _parser.parseQuery)(queryString));
     //console.log(JSON.stringify(query, null, 4));
 
-    var filePath = query.from;
+    var tableReadStream = void 0;
 
-    if (!_fs2.default.existsSync(filePath)) {
-        throw Error('file not found: "' + filePath + '"');
+    if (query.from) {
+        if (!_fs2.default.existsSync(query.from)) {
+            throw Error('file not found: "' + query.from + '"');
+        }
+
+        tableReadStream = createEndableReadStream(query.from);
+    } else {
+        tableReadStream = process.stdin;
     }
-
-    var tableReadStream = createEndableReadStream(filePath);
 
     var resultStream = tableReadStream.pipe(_csv2.default.parse({
         columns: true,
@@ -69,7 +73,9 @@ function performQuery(queryString, options) {
         resultStream = resultStream.pipe(new _orderBy.OrderingStream(query));
     }
 
-    resultStream = resultStream.pipe(_csv2.default.transform((0, _offset.performOffset)(query))).pipe(_csv2.default.transform((0, _limit.performLimit)(query, { onLimitReached: tableReadStream.end }))).pipe(_csv2.default.transform((0, _select.performSelect)(query)));
+    resultStream = resultStream.pipe(_csv2.default.transform((0, _offset.performOffset)(query))).pipe(_csv2.default.transform((0, _limit.performLimit)(query, { onLimitReached: function onLimitReached() {
+            return null;
+        } }))).pipe(_csv2.default.transform((0, _select.performSelect)(query)));
 
     return resultStream;
 }

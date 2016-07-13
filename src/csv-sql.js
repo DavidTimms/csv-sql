@@ -20,13 +20,18 @@ export function performQuery(queryString, options) {
     const query = identifyAggregatesInQuery(parseQuery(queryString));
     //console.log(JSON.stringify(query, null, 4));
 
-    const filePath = query.from;
+    let tableReadStream;
 
-    if (!fs.existsSync(filePath)) {
-        throw Error(`file not found: "${filePath}"`);
+    if (query.from) {
+        if (!fs.existsSync(query.from)) {
+            throw Error(`file not found: "${query.from}"`);
+        }
+
+        tableReadStream = createEndableReadStream(query.from);
     }
-
-    const tableReadStream = createEndableReadStream(filePath);
+    else {
+        tableReadStream = process.stdin;
+    }
 
     let resultStream = tableReadStream
         .pipe(csv.parse({
@@ -48,7 +53,7 @@ export function performQuery(queryString, options) {
 
     resultStream = resultStream
         .pipe(csv.transform(performOffset(query)))
-        .pipe(csv.transform(performLimit(query, {onLimitReached: tableReadStream.end})))
+        .pipe(csv.transform(performLimit(query, {onLimitReached: () => null})))
         .pipe(csv.transform(performSelect(query)));
 
     return resultStream;

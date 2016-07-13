@@ -45,7 +45,13 @@ function parseQuery(query) {
 function parseSubQuery(query) {
     var tokens = (0, _tokenizer.tokenize)(query);
 
-    return parser(tokens).then(keyword('SELECT')).bind('select', outputColumns).then(keyword('FROM')).bind('from', tableName).bind('where', createConditionClause('WHERE')).map(parseGroupByHaving).bind('orderBy', orderByClause).bind('limit', limitClause).bind('offset', offsetClause).mapNode(ast.query);
+    return parser(tokens).then(keyword('SELECT')).bind('select', outputColumns).bind('from', fromClause).bind('where', createConditionClause('WHERE')).map(parseGroupByHaving).bind('orderBy', orderByClause).bind('limit', limitClause).bind('offset', offsetClause).mapNode(ast.query);
+}
+
+function fromClause(rest) {
+    return parser(rest).ifNextToken(isKeyword('FROM'), function (curr) {
+        return curr.then(keyword('FROM')).just(tableName);
+    });
 }
 
 function parseGroupByHaving(parser) {

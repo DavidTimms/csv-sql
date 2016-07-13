@@ -22,7 +22,7 @@ Version 0.1 Checklist
 - [ ] `IN` operator.
 - [ ] More built-in functions.
 - [ ] Improved error messages.
-- [ ] Reading input from stdin, rather than a file.
+- [X] Reading input from stdin, rather than a file.
 
 Future
 ------

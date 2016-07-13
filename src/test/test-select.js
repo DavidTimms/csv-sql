@@ -9,7 +9,9 @@ function queryResults(queryString, options, callback) {
     // options are required
     if (typeof options === 'function') {
         callback = options;
-        options = {};
+        options = {
+            header: true,
+        };
     }
     const stream = toCSV(performQuery(queryString, options), options);
     const results = [];

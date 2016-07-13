@@ -22,14 +22,20 @@ function parseSubQuery(query) {
     return parser(tokens)
         .then(keyword('SELECT'))
         .bind('select', outputColumns)
-        .then(keyword('FROM'))
-        .bind('from', tableName)
+        .bind('from', fromClause)
         .bind('where', createConditionClause('WHERE'))
         .map(parseGroupByHaving)
         .bind('orderBy', orderByClause)
         .bind('limit', limitClause)
         .bind('offset', offsetClause)
         .mapNode(ast.query);
+}
+
+function fromClause(rest) {
+    return parser(rest).ifNextToken(isKeyword('FROM'), curr =>
+        curr.then(keyword('FROM'))
+            .just(tableName)
+    );
 }
 
 function parseGroupByHaving(parser) {

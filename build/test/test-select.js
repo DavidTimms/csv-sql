@@ -13,7 +13,9 @@ function queryResults(queryString, options, callback) {
     // options are required
     if (typeof options === 'function') {
         callback = options;
-        options = {};
+        options = {
+            header: true
+        };
     }
     var stream = (0, _csvSql.toCSV)((0, _csvSql.performQuery)(queryString, options), options);
     var results = [];

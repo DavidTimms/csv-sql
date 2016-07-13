@@ -89,6 +89,21 @@ describe('parseQuery', function () {
         }));
     });
 
+    it('should parse normal queries without a from clause', function () {
+        _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT a, b LIMIT 1'), ast.query({
+            select: [ast.namedExpression(ast.identifier('a')), ast.namedExpression(ast.identifier('b'))],
+            from: null,
+            limit: 1
+        }));
+    });
+
+    it('should parse starred queries without a from clause', function () {
+        _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT *'), ast.query({
+            select: '*',
+            from: null
+        }));
+    });
+
     it('should parse queries with renamed columns', function () {
         _chai.assert.deepEqual((0, _parser.parseQuery)('SELECT a AS b FROM "c.csv"').select, [ast.namedExpression(ast.identifier('a'), 'b')]);
     });

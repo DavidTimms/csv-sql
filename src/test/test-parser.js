@@ -147,6 +147,24 @@ describe('parseQuery', () => {
             from: 'people.csv',
         }));
     });
+
+    it('should parse normal queries without a from clause', () => {
+        assert.deepEqual(parseQuery('SELECT a, b LIMIT 1'), ast.query({
+            select: [
+                ast.namedExpression(ast.identifier('a')),
+                ast.namedExpression(ast.identifier('b')),
+            ],
+            from: null,
+            limit: 1,
+        }));
+    });
+
+    it('should parse starred queries without a from clause', () => {
+        assert.deepEqual(parseQuery('SELECT *'), ast.query({
+            select: '*',
+            from: null,
+        }));
+    });
     
     it('should parse queries with renamed columns', () => {
         assert.deepEqual(parseQuery('SELECT a AS b FROM "c.csv"').select, [
